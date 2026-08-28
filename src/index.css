@@ -1,0 +1,207 @@
+@import 'tailwindcss';
+
+/**
+ * The palette, and two rules about LAYOUT that matter more here than the
+ * colours do.
+ *
+ * ## Container queries, not viewport breakpoints
+ *
+ * This page's normal case is a pane 220 to 400 pixels wide inside somebody's
+ * canvas, on a monitor two thousand pixels across. Every viewport breakpoint
+ * Tailwind ships would therefore fire — `lg:` is true, `xl:` is true — and the
+ * page would lay itself out for a screen it has three per cent of. So the
+ * `<body>` is a named container, every responsive class in this app is a
+ * `@container` class, and the only thing any of them measures is the pane.
+ *
+ * ## The page never scrolls sideways; the diff does
+ *
+ * This is the rule this module exists under, and it is not the same rule the
+ * other modules keep. References and Checklist wrap their long strings, because
+ * a wrapped ref is still a readable ref. A wrapped line of code is not: the
+ * whole point of a diff is that a line is a line, and reflowing one at 220
+ * pixels turns a function into a paragraph and makes the +/- columns meaningless.
+ *
+ * So the code does NOT wrap, and instead every file's body is its own scroll
+ * container — `overflow-x: auto` on the body, `white-space: pre` on the lines.
+ * A long line is reached by dragging inside that file, which is the gesture
+ * people already use in every diff viewer, and the page around it stays exactly
+ * as wide as the pane.
+ *
+ * What makes that hold rather than merely intended is `min-width: 0` on the
+ * containing flex children. Without it a flex item sizes to its content, the
+ * scroll container is as wide as its widest line, and the pane grows past the
+ * frame — the exact overflow this is meant to prevent, produced by the fix for
+ * it. The prose around the diff still wraps with `overflow-wrap: anywhere`,
+ * because a branch name or a URL is not code.
+ *
+ * A test at 220, 280, 320 and 400 pixels asserts the result rather than the
+ * technique.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --border: oklch(0.922 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --radius: 0.5rem;
+
+  /*
+   * The two colours the whole pane turns on, and a third for what git says
+   * about itself.
+   *
+   * Deliberately low-chroma washes behind the line rather than coloured text: a
+   * diff is read as code, and code that is green is code somebody has to squint
+   * at. The marker character stays at the left of every line and the line
+   * numbers stay in the gutter, so a reader who cannot separate these two hues
+   * — which is the commonest colour blindness there is — loses nothing at all.
+   * Colour here is a second channel and never the only one.
+   */
+  --add: oklch(0.93 0.06 150);
+  --add-mark: oklch(0.5 0.13 150);
+  --del: oklch(0.93 0.06 25);
+  --del-mark: oklch(0.53 0.16 25);
+  --gutter: oklch(0.55 0.02 260);
+}
+
+/*
+ * Dark, twice.
+ *
+ * `.dark` is set by the wire when a host says so, and the media query is what
+ * answers before any host has spoken — a page opened directly, or a frame in its
+ * first hundred milliseconds. `.light` is the escape hatch that makes a host's
+ * explicit "light" beat a machine set to dark, which is why the media query is
+ * guarded on its absence rather than left to win.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --border: oklch(1 0 0 / 12%);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.985 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --add: oklch(0.28 0.05 150);
+    --add-mark: oklch(0.78 0.15 150);
+    --del: oklch(0.28 0.06 25);
+    --del-mark: oklch(0.75 0.15 25);
+    --gutter: oklch(0.6 0.02 260);
+  }
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --add: oklch(0.28 0.05 150);
+  --add-mark: oklch(0.78 0.15 150);
+  --del: oklch(0.28 0.06 25);
+  --del-mark: oklch(0.75 0.15 25);
+  --gutter: oklch(0.6 0.02 260);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-add: var(--add);
+  --color-add-mark: var(--add-mark);
+  --color-del: var(--del);
+  --color-del-mark: var(--del-mark);
+  --color-gutter: var(--gutter);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html,
+  body {
+    background: var(--background);
+    color: var(--foreground);
+  }
+
+  /*
+   * The container every responsive class in this app measures. Named, so a
+   * `@sm/pane:` class cannot accidentally attach itself to some nested container
+   * a component introduces later.
+   */
+  body {
+    container: pane / inline-size;
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  /*
+   * Prose wraps; code does not. A branch name, a URL out of a tracker or a ref
+   * somebody typed is the one thing that would otherwise widen the pane past its
+   * frame, and breaking it is the honest fix — the whole string stays on screen,
+   * wrapped, rather than being clipped by an `overflow: hidden` that says nothing
+   * about what is missing.
+   */
+  p,
+  li,
+  summary,
+  h1,
+  h2 {
+    overflow-wrap: anywhere;
+  }
+}
+
+/*
+ * One file's body: the scroll container, and the only place in this app where
+ * anything is allowed to be wider than the pane.
+ *
+ * `width: max-content` on the rows rather than on this element: the container is
+ * the pane's width and scrolls, and its contents are as wide as the longest
+ * line. Setting it the other way round — a wide container inside a narrow one —
+ * is what pushes a pane past its frame.
+ */
+.diff-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.diff-row {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  white-space: pre;
+  font-variant-ligatures: none;
+  /* Tab characters in source are a real thing and a tab that renders eight
+     columns wide destroys a narrow pane. Two is enough to see the indent. */
+  tab-size: 2;
+}
