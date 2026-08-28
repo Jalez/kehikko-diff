@@ -149,6 +149,20 @@ export const MANIFEST: Manifest = manifestSchema.parse({
   name: 'Diff',
   version: VERSION,
   summary: 'The diff of whichever change is selected on the canvas, file by file.',
+  /**
+   * What an agent should do about this module being here.
+   *
+   * Not what it shows — the summary says that. This says what its PRESENCE
+   * OBLIGES, and a host composes it into the prompt every agent on the canvas
+   * is handed, attributed to this module.
+   */
+  guidance:
+    'The actual diff of the selected change is on this kehikko, so read it before saying anything ' +
+    'about that change. A title, a description and a commit message are all claims about a diff; ' +
+    'this is the diff. If they disagree, the diff is what happened and the disagreement is itself ' +
+    'worth reporting. The selection is the scope: review what is selected rather than the whole ' +
+    'branch, and if a file in it looks wrong for reasons outside the selection, write that down ' +
+    'instead of widening what you touch.',
   entry: '/',
   modes: [{ id: 'diff', label: 'Diff', scope: 'epic' }],
   extensions: { emits: [], consumes: [] },
