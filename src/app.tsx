@@ -1,3 +1,13 @@
+import {
+  Antenna,
+  FolderOpen,
+  MousePointerClick,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  Unplug,
+  type LucideIcon,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { ID } from '../manifest.ts'
@@ -227,19 +237,66 @@ export function App() {
  * the thing that fills it is a click somewhere else on the canvas.
  */
 function Sightline({ sight }: { sight: Sight }) {
-  const said =
+  /*
+   * A heading, a sentence and a mark, per state.
+   *
+   * The heading is new and the sentences are the ones that were already here,
+   * unchanged. The reason for adding a heading rather than styling the
+   * paragraph is that these seven states are read at a glance and then acted
+   * on somewhere else — in another pane, or in a terminal — and four words a
+   * reader can take in without reading a paragraph is what decides whether
+   * they act on the right one. The paragraph is still the whole answer; the
+   * heading is the index into it.
+   *
+   * The icon is `aria-hidden`. It is a mark that these panels are the same kind
+   * of thing as each other, and it says nothing a screen reader needs, because
+   * every one of them is followed by the sentence that actually says it.
+   */
+  const [Mark, heading, said]: [LucideIcon, string, string] =
     sight.at === 'listening'
-      ? 'Waiting to hear whether anything is framing this page.'
+      ? [Antenna, 'Listening', 'Waiting to hear whether anything is framing this page.']
       : sight.at === 'unhosted'
-        ? 'Nothing is framing this page, so nothing has said which change to show. This app has no list of its own to fall back on: what it shows is decided entirely by what a canvas has selected.'
+        ? [
+            Unplug,
+            'Nothing is framing this page',
+            'Nothing is framing this page, so nothing has said which change to show. This app has no list of its own to fall back on: what it shows is decided entirely by what a canvas has selected.',
+          ]
         : sight.at === 'no-epic'
-          ? 'A roadmap is here and no epic is open, so there is nothing to select a change out of.'
+          ? [FolderOpen, 'No epic is open', 'A roadmap is here and no epic is open, so there is nothing to select a change out of.']
           : sight.at === 'asking'
-            ? `Asking the roadmap what it last read about ${sight.epic}.`
+            ? [Search, 'Asking the roadmap', `Asking the roadmap what it last read about ${sight.epic}.`]
             : sight.at === 'refused'
-              ? `The roadmap was asked what it last read about ${sight.epic} and said no: ${sight.refusal.error} Without that reading this app cannot tell a pull request from an issue, or find out where either of them lives.`
+              ? [
+                  /* The state the brief names beside "nothing selected", and it
+                     is deliberately not drawn as a failure of this app. A host
+                     may refuse any call at any time whatever a manifest
+                     declares — the reasoning is in `manifest.ts` — so a refusal
+                     is an ordinary answer, and the host's own words are quoted
+                     rather than paraphrased because they are the only thing
+                     that says WHY. */
+                  ShieldAlert,
+                  'The roadmap said no',
+                  `The roadmap was asked what it last read about ${sight.epic} and said no: ${sight.refusal.error} Without that reading this app cannot tell a pull request from an issue, or find out where either of them lives.`,
+                ]
               : sight.at === 'unread'
-                ? `The roadmap has no reading for ${sight.epic} — nothing has been refreshed from a tracker for it. Refresh the epic and a selected change will have an address and a head commit to fetch by.`
-                : 'Nothing is selected on the canvas. Pick a merge request or a pull request in another pane and its diff appears here.'
-  return <p className="text-[0.7rem] leading-4 text-muted-foreground">{said}</p>
+                ? [
+                    RefreshCw,
+                    'Nothing has been read yet',
+                    `The roadmap has no reading for ${sight.epic} — nothing has been refreshed from a tracker for it. Refresh the epic and a selected change will have an address and a head commit to fetch by.`,
+                  ]
+                : [
+                    MousePointerClick,
+                    'Nothing is selected',
+                    'Nothing is selected on the canvas. Pick a merge request or a pull request in another pane and its diff appears here.',
+                  ]
+
+  return (
+    <div className="flex min-w-0 items-start gap-2 rounded-md border bg-card px-2 py-2">
+      <Mark aria-hidden="true" className="mt-px size-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0">
+        <p className="text-[0.75rem] leading-4 font-semibold">{heading}</p>
+        <p className="mt-1 text-[0.7rem] leading-4 text-muted-foreground">{said}</p>
+      </div>
+    </div>
+  )
 }

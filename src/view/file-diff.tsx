@@ -1,7 +1,11 @@
+import { ChevronRight } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
 
+import { Badge } from '@/components/ui/badge.tsx'
+import { Button } from '@/components/ui/button.tsx'
 import { FILE_LINES } from '@/diff/budget.ts'
 import type { DiffLine, FileDiff } from '@/diff/parse.ts'
+import { cn } from '@/lib/utils.ts'
 
 /**
  * One file of a patch: a header that is always drawn, and a body that may not
@@ -50,7 +54,7 @@ function Line({ line }: { line: DiffLine }) {
   const mark = line.kind === 'add' ? '+' : line.kind === 'del' ? '-' : line.kind === 'note' ? '\\' : ' '
   const markTone = line.kind === 'add' ? 'text-add-mark' : line.kind === 'del' ? 'text-del-mark' : 'text-gutter'
   return (
-    <div className={`diff-row ${wash}`}>
+    <div className={cn('diff-row', wash)}>
       {/* Two gutters, both always present even when one is empty: a number that
           moves column depending on the kind of line is a number nobody can scan
           down. `select-none` so that dragging across the code to copy it does not
@@ -66,7 +70,7 @@ function Line({ line }: { line: DiffLine }) {
           the whole value of a gutter is that it is a column. */}
       <span className="w-[var(--gutter-ch)] shrink-0 select-none pr-1 text-right text-gutter">{line.old ?? ''}</span>
       <span className="w-[var(--gutter-ch)] shrink-0 select-none pr-1 text-right text-gutter">{line.new ?? ''}</span>
-      <span className={`w-[1.5ch] shrink-0 select-none ${markTone}`}>{mark}</span>
+      <span className={cn('w-[1.5ch] shrink-0 select-none', markTone)}>{mark}</span>
       <span className="pr-2">{line.text}</span>
     </div>
   )
@@ -145,25 +149,49 @@ export function FileSection({
            immediately close every file the plan had decided to open. */
         if ((e.currentTarget as HTMLDetailsElement).open !== open) onToggle()
       }}
-      className="min-w-0 rounded-md border"
+      className="min-w-0 rounded-md border bg-card"
       data-file={file.path}
       data-open={open ? 'yes' : 'no'}
     >
-      <summary className="cursor-pointer list-none px-2 py-1 text-[0.7rem] leading-4 marker:content-['']">
-        <span className="font-mono">{file.path}</span>
-        {file.from && file.from !== file.path ? (
-          <span className="text-muted-foreground"> ← {file.from}</span>
-        ) : null}
-        <span className="ml-1 whitespace-nowrap text-muted-foreground">
-          {STATUS[file.status]}
-          {file.binary ? ', binary' : ''}
-          {file.added || file.removed ? (
-            <>
-              {' · '}
-              <span className="text-add-mark">+{file.added}</span> <span className="text-del-mark">−{file.removed}</span>
-            </>
+      {/*
+        A flex row of three parts, and the middle one carries `min-w-0`.
+
+        Without it the path — one unbroken string, which is what a path is —
+        sizes this flex item to its own length, the `<details>` grows past the
+        pane, and the whole page scrolls sideways. That is the failure this
+        module is written against, and it is produced here, in the HEADER,
+        rather than in the diff body everybody watches. The badges are
+        `shrink-0` on the other side of it so a long path never squeezes the two
+        numbers into a column of digits.
+      */}
+      <summary className="flex cursor-pointer list-none items-start gap-1 px-2 py-1 text-[0.7rem] leading-4 hover:bg-accent marker:content-['']">
+        {/* Decoration over a control that already exists: `<details>` is
+            keyboard-operable and announced without this, so the chevron is
+            `aria-hidden` and adds nothing for a screen reader to trip over. */}
+        <ChevronRight
+          aria-hidden="true"
+          className={cn('mt-0.5 size-3 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="font-mono">{file.path}</span>
+          {file.from && file.from !== file.path ? (
+            <span className="text-muted-foreground"> ← {file.from}</span>
           ) : null}
+          <span className="ml-1 whitespace-nowrap text-muted-foreground">
+            {STATUS[file.status]}
+            {file.binary ? ', binary' : ''}
+          </span>
         </span>
+        {file.added || file.removed ? (
+          /* The sign is inside each badge rather than implied by its colour.
+             Red and green are the pair the commonest colour blindness merges,
+             and a diff whose two headline numbers are told apart by nothing else
+             is a diff that reader cannot read. */
+          <span className="flex shrink-0 items-center gap-1">
+            <Badge variant="add">+{file.added}</Badge>
+            <Badge variant="del">−{file.removed}</Badge>
+          </span>
+        ) : null}
       </summary>
 
       {file.binary ? (
@@ -210,23 +238,15 @@ export function FileSection({
           <span className="text-muted-foreground">
             {cut} more {cut === 1 ? 'line' : 'lines'} in this file are not drawn yet.{' '}
           </span>
-          <button
-            type="button"
-            className="cursor-pointer underline underline-offset-2"
-            onClick={() => setShown((was) => was + FILE_LINES)}
-          >
+          <Button type="button" variant="link" size="inline" onClick={() => setShown((was) => was + FILE_LINES)}>
             Draw {Math.min(cut, FILE_LINES)} more
-          </button>
+          </Button>
           {cut > FILE_LINES ? (
             <>
               {' · '}
-              <button
-                type="button"
-                className="cursor-pointer underline underline-offset-2"
-                onClick={() => setShown(Number.MAX_SAFE_INTEGER)}
-              >
+              <Button type="button" variant="link" size="inline" onClick={() => setShown(Number.MAX_SAFE_INTEGER)}>
                 Draw all {cut}
-              </button>
+              </Button>
             </>
           ) : null}
         </div>

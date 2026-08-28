@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 
+import { Badge } from '@/components/ui/badge.tsx'
 import type { Patch } from '@/diff/ask.ts'
 import { plan } from '@/diff/budget.ts'
 import { totals } from '@/diff/parse.ts'
@@ -54,16 +55,25 @@ export function PatchView({ patch }: { patch: Patch }) {
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <p className="text-[0.7rem] leading-4 text-muted-foreground">
-        {sum.files} {sum.files === 1 ? 'file' : 'files'}, <span className="text-add-mark">+{sum.added}</span>{' '}
-        <span className="text-del-mark">−{sum.removed}</span>
-        {opening.closed
-          ? ` · ${opening.closed} ${opening.closed === 1 ? 'file is' : 'files are'} closed to start with, holding ${opening.heldBack} lines. Open any of them below; nothing is missing from this list.`
-          : ''}
+      {/* The whole-patch totals in the same two badges the file headers use, so
+          the arithmetic reads as the same claim at both scales. `flex-wrap`
+          rather than `whitespace-nowrap`: at 220 pixels the sentence after them
+          is long and has to be allowed to fall to its own line. */}
+      <p className="flex flex-wrap items-center gap-1 text-[0.7rem] leading-4 text-muted-foreground">
+        <span>
+          {sum.files} {sum.files === 1 ? 'file' : 'files'}
+        </span>
+        <Badge variant="add">+{sum.added}</Badge>
+        <Badge variant="del">−{sum.removed}</Badge>
+        {opening.closed ? (
+          <span className="min-w-0">
+            {`${opening.closed} ${opening.closed === 1 ? 'file is' : 'files are'} closed to start with, holding ${opening.heldBack} lines. Open any of them below; nothing is missing from this list.`}
+          </span>
+        ) : null}
       </p>
 
       {patch.truncated ? (
-        <p className="rounded-md border border-del-mark px-2 py-1 text-[0.7rem] leading-4">
+        <p className="rounded-md border border-del-mark bg-del px-2 py-1 text-[0.7rem] leading-4">
           This patch was longer than this app will read into memory and was cut off part-way. Every file below is real, and
           there may be files after them that never arrived. Read it with <code>gh pr diff</code> or on the tracker itself
           if the end of it matters.

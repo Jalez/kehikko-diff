@@ -133,4 +133,71 @@ describe('Change', () => {
     )
     expect(screen.getByText(/change with no commits against its base/)).toBeTruthy()
   })
+
+  /**
+   * The two properties the house components must not quietly lose.
+   *
+   * Both are asserted on the RESULT rather than on the component: a badge that
+   * stops carrying its sign, or a file body that stops being its own scroll
+   * container, is a regression a reader sees and a type checker does not.
+   */
+  test('every count is signed, so the two of them are told apart by more than colour', () => {
+    const { container } = render(
+      <Change
+        refName="gh#105"
+        found={change()}
+        ask={{
+          at: 'ok',
+          patch: patch(`diff --git a/src/one.ts b/src/one.ts
+--- a/src/one.ts
++++ b/src/one.ts
+@@ -10,2 +10,2 @@
+-was this
++is this
+`),
+        }}
+        onAsk={nothing}
+        epic="e"
+      />,
+    )
+    const badges = [...container.querySelectorAll('[data-slot="badge"]')].map((b) => b.textContent ?? '')
+    /* Two for the file and two for the patch as a whole, and every one of them
+       begins with a sign. Red and green are the pair the commonest colour
+       blindness merges; a number with no sign in front of it would be readable
+       only to whoever can separate the hues. */
+    const counts = badges.filter((t) => /^[+−]/.test(t))
+    expect(counts.length).toBeGreaterThanOrEqual(4)
+    expect(counts).toContain('+1')
+    expect(counts).toContain('−1')
+  })
+
+  test('a file’s diff is its own scroll container, so a long line never widens the page', () => {
+    const { container } = render(
+      <Change
+        refName="gh#105"
+        found={change()}
+        ask={{
+          at: 'ok',
+          patch: patch(`diff --git a/src/one.ts b/src/one.ts
+--- a/src/one.ts
++++ b/src/one.ts
+@@ -10,2 +10,2 @@
+-was this
++${'x'.repeat(4000)}
+`),
+        }}
+        onAsk={nothing}
+        epic="e"
+      />,
+    )
+    const file = container.querySelector('[data-file="src/one.ts"]')
+    expect(file).toBeTruthy()
+    /* The class is the contract with `index.css`, where `overflow-x: auto` and
+       `overscroll-behavior-x: contain` live. A happy-dom lays nothing out, so
+       the pixel version of this claim is measured in a browser at 220, 280,
+       320, 400 and 1200 pixels; what is asserted here is that the element those
+       rules attach to is still the one wrapping the rows. */
+    expect(file?.querySelector('.diff-scroll')).toBeTruthy()
+    expect(file?.querySelectorAll('.diff-row').length).toBeGreaterThan(0)
+  })
 })

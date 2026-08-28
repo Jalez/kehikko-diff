@@ -1,3 +1,5 @@
+import { Badge } from '@/components/ui/badge.tsx'
+import { Button } from '@/components/ui/button.tsx'
 import type { Patch } from '@/diff/ask.ts'
 import type { Found } from '@/live/lookup.ts'
 
@@ -64,13 +66,19 @@ export function Change({
       </h2>
 
       {found ? (
-        <p className="text-[0.7rem] leading-4 text-muted-foreground">
-          {found.kind === 'change' ? 'change' : 'issue'}
-          {found.state ? ` · ${found.state}` : ''}
-          {found.sha ? ` · ${short(found.sha)}` : ''}
+        <p className="flex flex-wrap items-center gap-1 text-[0.7rem] leading-4 text-muted-foreground">
+          {/* What this reference IS comes from the bag the host's own refresh
+              filed it in, and it is the fact everything below turns on — an
+              issue has no diff at all. It is a badge because it is a
+              classification rather than a sentence, and it is a WORD in that
+              badge because a shape or a colour would be this app asserting the
+              one thing it has to be exact about by a means a reader cannot
+              read back. */}
+          <Badge variant="outline">{found.kind === 'change' ? 'change' : 'issue'}</Badge>
+          {found.state ? <Badge>{found.state}</Badge> : null}
+          {found.sha ? <span className="font-mono">{short(found.sha)}</span> : null}
           {found.url ? (
             <>
-              {' · '}
               {/* `noreferrer` as well as `noopener`: this page may be running on
                   an opaque origin depending on how a host framed it, and a
                   referrer of "null" is no use to anybody while a real one leaks
@@ -152,9 +160,9 @@ function Body({
   if (!ask) {
     return (
       <p className="text-[0.7rem] leading-4">
-        <button type="button" className="cursor-pointer underline underline-offset-2" onClick={onAsk}>
+        <Button type="button" variant="link" size="inline" onClick={onAsk}>
           Show the diff of {refName}
-        </button>
+        </Button>
         <span className="text-muted-foreground">
           {' '}
           — it is not fetched yet, because reading it means running the tracker’s own command line.
@@ -176,11 +184,13 @@ function Body({
         {/* The CLI's own words, verbatim. `gh` says "gh auth login" when a token
             has expired, and that sentence is worth more to the person reading
             this than any paraphrase this app could write. */}
-        <p className="text-[0.7rem] leading-4">{ask.error}</p>
+        <p className="rounded-md border border-del-mark/50 bg-del px-2 py-1 font-mono text-[0.7rem] leading-4">
+          {ask.error}
+        </p>
         <p className="text-[0.7rem] leading-4">
-          <button type="button" className="cursor-pointer underline underline-offset-2" onClick={onAsk}>
+          <Button type="button" variant="link" size="inline" onClick={onAsk}>
             Try again
-          </button>
+          </Button>
         </p>
       </div>
     )

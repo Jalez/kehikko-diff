@@ -179,8 +179,18 @@ The page never scrolls sideways; the diff does. Other modules wrap their long
 strings, because a wrapped ref is still a readable ref — a wrapped line of code
 is not. So the code does not wrap and every file's body is its own
 `overflow-x: auto` container, held there by `min-width: 0` on the flex children.
-Measured at 220, 280, 320 and 400 pixels against a real 26-file patch:
-`document.scrollWidth === window.innerWidth` at every one.
+There is a second place that rule can be broken and it is not the diff body: the
+file HEADER. A path is one unbroken string, so the flex item holding it needs
+`min-width: 0` of its own or it sizes to the path and takes the whole
+`<details>` past the frame — the overflow arriving from the one row nobody
+watches.
+
+Measured at 220, 280, 320, 400 and 1200 pixels, light and dark, standalone and
+framed in an iframe of that width, against a real 189-file patch containing a
+468,476-character line: `document.documentElement.scrollWidth ===
+window.innerWidth` at every one of the twenty, no `<details>` wider than the
+page at any of them, and 187 of the 189 file bodies scrolling inside themselves
+at 220 pixels.
 
 ## The wire
 
@@ -199,10 +209,44 @@ Measured at 220, 280, 320 and 400 pixels against a real 26-file patch:
   change anywhere on the canvas; refetching on each would blank this pane
   precisely when it was being asked to say something.
 
+## The house stack, and what a diff asks of it
+
+The page is Tailwind v4 configured in CSS — `@import 'tailwindcss'` and
+`@theme inline` in `src/index.css`, wired by `@tailwindcss/vite`. There is no
+`tailwind.config.js` and there must not be one; v4 is CSS-first and a config
+file would be a second place for the same answers. shadcn is here on the same
+terms as in the other modules: `components.json`, `src/lib/utils.ts` for `cn()`,
+and `src/components/ui/` for the components themselves.
+
+Two of them, and only two, because a diff is mostly a grid of characters rather
+than a page of controls:
+
+- **`Badge`** carries the counts — on every file's header and once for the patch
+  as a whole. It has an `add` and a `del` variant using the same two colours the
+  rows use, so a badge in a header and a wash in the body read as the same
+  claim. **The sign is inside the badge**: `+24`, `−0`. Red and green are the
+  pair the commonest colour blindness merges, and a count told apart from its
+  neighbour by hue alone is a count that reader cannot read. The same rule runs
+  down the rows, where the `+`/`-` marker column and the two line-number gutters
+  carry it.
+- **`Button`** with a `link` variant, for the presses that sit mid-sentence —
+  "…1,240 more lines in this file are not drawn yet. Draw 800 more". A boxed
+  button there breaks the sentence in half and pushes the number that gives it
+  meaning onto its own line at 220 pixels.
+
+The theme comes from `roadmap.context.theme` and nowhere else: `use-roadmap.ts`
+puts `dark` or `light` on the root element and the `dark:` variant is defined as
+`&:where(.dark, .dark *)`, so a host asking for light on a machine set to dark
+gets light. The media query in `index.css` is guarded on `:not(.light)` and
+exists only to answer before any host has spoken.
+
 ## Files
 
 ```
 manifest.ts          what this app says about itself, and why it declares what it does
+components.json      shadcn's own file; `config: ""` because Tailwind v4 has no config file
+src/lib/utils.ts     cn(): clsx for the conditionals, tailwind-merge so a later class wins
+src/components/ui/   badge and button, the house versions
 doors.ts             /healthz and /api/diff, as functions; no socket
 vite.config.ts       the page, the manifest, and server.cors: false
 patch/locate.ts      a tracker URL -> a forge, a repository and a number. Pure.

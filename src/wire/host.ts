@@ -227,6 +227,13 @@ export function connect(id: string, events: HostEvents = {}, window_: MessageSou
            leaves the honest sentence available to whoever writes it; what this
            page does NOT do is invent one it has never seen a host send. */
         pinned: message.pinned,
+        /* Which kehikko is being looked at, carried for the same reason the two
+           fields above are: this is a rebuild rather than a pass-through, and a
+           field dropped here is a field the hook can never learn about however
+           faithfully a host sends it. Protocol 0.7.0 added it and this line was
+           missing until the port — the symptom was a type error here and
+           nothing at all on screen, which is the quiet half of the failure. */
+        kehikko: message.kehikko,
       })
       return
     }
