@@ -4,9 +4,11 @@ import { resolve } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { WELL_KNOWN } from 'roadmap-module-protocol'
+import { serves } from 'roadmap-module-protocol/serve'
 import { defineConfig, type Plugin } from 'vite'
 
 import { MANIFEST, answer } from './doors.ts'
+import { ID, PREFERRED_PORT } from './manifest.ts'
 
 /**
  * Every door this app answers on, served by the one process that serves the
@@ -145,10 +147,28 @@ function doors(): Plugin {
  * chose. Absolute asset paths are correct in the first case and a guess in the
  * second; relative ones are a fact in both, because the browser resolves them
  * against the document it just fetched.
+ *
+ * ## `server` says `cors: false` and deliberately says no port
+ *
+ * 7890 used to be written on the `bunx vite` line in `run.sh` and again in
+ * `register.ts`, and true in neither the moment something else held the port:
+ * `--strictPort` meant this app printed `Error: Port 7890 is already in use` and
+ * exited 1, so a program with no interest in diffs could stop the diffs from
+ * opening. It is `PREFERRED_PORT` in `manifest.ts` now, said once beside the id
+ * and read from there by this file and `register.ts` both.
+ *
+ * `serves()` is FIRST in the plugin list because it has to claim a port before
+ * anything else in this config asks for one, and it sets `strictPort: false`
+ * itself so Vite's own fallback is a second net rather than the absence of one.
+ * A free 7890 is taken in silence; this module already answering there ends the
+ * start cleanly rather than making a second copy; anything else is a loud move
+ * to the next free port with the registration rewritten to the port the server
+ * ACTUALLY bound, read off `httpServer.address()` after `listening` rather than
+ * off what was asked for.
  */
 export default defineConfig({
   base: './',
-  plugins: [doors(), react(), tailwindcss()],
+  plugins: [serves({ id: ID, prefer: PREFERRED_PORT }), doors(), react(), tailwindcss()],
   resolve: { alias: { '@': resolve(import.meta.dirname, 'src') } },
   server: { cors: false },
   build: { outDir: 'dist', emptyOutDir: true },
