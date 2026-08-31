@@ -188,6 +188,36 @@ export const MANIFEST: Manifest = manifestSchema.parse({
   entry: '/',
   modes: [{ id: 'diff', label: 'Diff', scope: 'epic' }],
   extensions: { emits: [], consumes: [] },
+  /**
+   * ## `reacts: ['selection']`, which is a description and not a request
+   *
+   * This is the field for the sentence a few paragraphs up, which this
+   * manifest has been making in prose since it was written: this app REACTS
+   * to a selection and never makes one. `src/app.tsx` joins the selected refs
+   * into a key and fetches a patch for each of them, so a change of selection
+   * is the whole of what changes this page.
+   *
+   * The field is new, and the reason to fill it in is a person browsing the
+   * module registry. Until now a host could say who SENDS — References declares
+   * `selection:set` — and could not say who RECEIVES, because every framed
+   * module is handed the whole context and receiving one distinguished nobody.
+   * So a registry could draw half of every relationship. This is the other
+   * half, written down.
+   *
+   * It changes nothing about what this app is given. The selection arrives in
+   * `roadmap.context` whether or not this line exists, and if a host ever
+   * started withholding the context from modules that had not declared an
+   * interest, that host would have turned a line of documentation into a
+   * permission over something it was already broadcasting. Nothing here is
+   * asked for and nothing is granted; see the essay on `reacts` in the
+   * protocol's `manifest.ts`.
+   *
+   * `passage` is deliberately not here. A patch is a change to a repository, and where
+   * somebody is pointing inside a `.tex` says nothing about which change to
+   * show. Ticking a word here that the code does not act on would put a name
+   * in somebody's registry that is not true of this program.
+   */
+  reacts: ['selection'],
   declares: {
     protocol: `>=${PROTOCOL} <${PROTOCOL + 1}`,
     uses: ['live:read'],
