@@ -37,7 +37,7 @@ export const VERSION = '1.0.0'
  * Deliberately absent:
  *
  * - **`selection:set`.** This app REACTS to a selection and never makes one.
- *   Declaring it would be asking for permission to change what every other pane
+ *   Declaring it would be asking for permission to change what every other container
  *   on the canvas is looking at, from a module whose entire job is to answer a
  *   question about what is already picked.
  * - **`epics:read`.** References declares it so that a page with no epic can
@@ -67,12 +67,12 @@ export const VERSION = '1.0.0'
  * ## `prompt: false`, and the reasoning rather than the shrug
  *
  * The protocol offers a module a prompt: a paragraph a person writes on the
- * canvas, aimed at one pane, delivered in every context. Declaring it makes a
+ * canvas, aimed at one container, delivered in every context. Declaring it makes a
  * host OFFER one, and offering one is a promise that what somebody types will be
  * used. So the question is not "could we find a use" but "is there work here
  * that has to be described before it can be done", and the answer is no.
  *
- * What this pane shows is fully determined two ways over. WHICH diff comes from
+ * What this container shows is fully determined two ways over. WHICH diff comes from
  * the selection, which is a fact about the canvas and not a thing to be asked
  * for in prose. WHAT the diff says comes from `gh pr diff`, byte for byte —
  * this app renders a patch and does not summarise, judge, or choose what to

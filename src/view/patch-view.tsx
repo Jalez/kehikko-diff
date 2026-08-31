@@ -10,7 +10,7 @@ import { FileSection } from './file-diff.tsx'
 /**
  * One whole patch: what it touched, then every file it touched.
  *
- * ## The summary line is the thing a narrow pane is actually for
+ * ## The summary line is the thing a narrow container is actually for
  *
  * At 220 pixels nobody reads a diff line by line — they find out what moved and
  * then open the one file they care about. So the counts come first and the file

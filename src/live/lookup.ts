@@ -47,7 +47,7 @@
  * ## A ref that is not in the reading is an ordinary state
  *
  * Not an error, and not a blank. Somebody may have picked a reference from a
- * pane showing another epic, or one no refresh has ever read. It comes back
+ * container showing another epic, or one no refresh has ever read. It comes back
  * absent, the page says exactly that in its own sentence, and the reference is
  * still drawn. The one thing that must never happen is a selected ref silently
  * not appearing: a missing row looks exactly like a row that was never meant to

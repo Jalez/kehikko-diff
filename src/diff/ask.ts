@@ -66,7 +66,7 @@ export function forget(): void {
  * Every failure is an `{ ok: false, error }` with a sentence in it, and the
  * sentences are mostly the CLI's own — `gh` says "gh auth login" when a token
  * has expired, and that is worth a hundred times more to the person reading this
- * pane than "the diff could not be fetched" would be. Nothing here throws, so no
+ * container than "the diff could not be fetched" would be. Nothing here throws, so no
  * caller has to remember to catch.
  */
 export async function askDiff(url: string, sha: string): Promise<Answer> {

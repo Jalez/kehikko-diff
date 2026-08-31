@@ -29,7 +29,7 @@ import { useRoadmap, type GotoHandler, type Sight } from '@/wire/use-roadmap.ts'
  * `live/lookup.ts` for why the bag is the only thing that can say the first of
  * those.
  *
- * ## Several references selected, and what this pane does about it
+ * ## Several references selected, and what this container does about it
  *
  * It draws ALL of them, in the order the host sent them, each as its own
  * section, and it fetches exactly one: the first that is a change with an
@@ -45,13 +45,13 @@ import { useRoadmap, type GotoHandler, type Sight } from '@/wire/use-roadmap.ts'
  *   somebody selects four things, four things appear.
  * - **Fetch all of them.** Refuse, and this is the one that would have felt
  *   generous. Every fetch is a subprocess against somebody's rate limit and, on
- *   a slow connection, several seconds of a pane doing nothing. The protocol
+ *   a slow connection, several seconds of a container doing nothing. The protocol
  *   caps a selection at 32 refs, so "all of them" has a worst case of 32
  *   concurrent `gh` invocations started by one click in another module. And it
  *   is work almost nobody wants: at 220 pixels a reader is looking at one diff.
  * - **Fetch none, make the reader press even for one.** Refuse. The overwhelming
  *   case is one change selected, and making somebody press a button to see the
- *   thing they just selected is a pane that does not do its job.
+ *   thing they just selected is a container that does not do its job.
  *
  * So: one automatic fetch, every other diff one press away, and the press is
  * labelled with what it will do. The cost is stated on screen rather than
@@ -61,10 +61,10 @@ import { useRoadmap, type GotoHandler, type Sight } from '@/wire/use-roadmap.ts'
  *
  * ## Identity is printed only when nothing is framing this page
  *
- * A host prints the module's name in the pane header and hangs the manifest's
+ * A host prints the module's name in the container header and hangs the manifest's
  * `summary` off it. A page that also printed "Diff" at the top of itself would
- * be saying the name twice and spending a fixed strip of a 340-pixel-tall pane
- * on the repetition. Unframed there is no pane header and nothing else would
+ * be saying the name twice and spending a fixed strip of a 340-pixel-tall container
+ * on the repetition. Unframed there is no container header and nothing else would
  * ever say what this program is, so the heading stays. The test is
  * `window.parent !== window`, which is answerable before first paint and
  * therefore does not blink.
@@ -92,18 +92,18 @@ export function App() {
 
   const onGoto = useCallback<GotoHandler>((message, answer) => {
     /* A `goto` may name an epic, a step, or a reference, and only the last is a
-       thing this pane draws. Answering "not found" for the other two is honest
+       thing this container draws. Answering "not found" for the other two is honest
        rather than a failure: this page has no epic of its own to move to and no
        steps at all. Saying so quickly is what gets the reader the host's
        fallback link instead of a twelve-second wait. */
     const ref = message.ref
     if (!ref) {
-      answer(false, 'This pane shows the diff of a selected change, so there is nothing here to walk to by epic or step.')
+      answer(false, 'This container shows the diff of a selected change, so there is nothing here to walk to by epic or step.')
       return
     }
     const section = document.querySelector(`[data-ref="${CSS.escape(ref)}"]`)
     if (!section) {
-      answer(false, 'This pane is showing what the canvas has selected, and that reference is not among them.')
+      answer(false, 'This container is showing what the canvas has selected, and that reference is not among them.')
       return
     }
     section.scrollIntoView({ block: 'start', behavior: 'smooth' })
@@ -231,9 +231,9 @@ export function App() {
  * None of them is a spinner. `listening` says what it is waiting for and lasts
  * under a second.
  *
- * The last one — a reading in hand and nothing picked — is the state this pane
+ * The last one — a reading in hand and nothing picked — is the state this container
  * spends most of its life in, and it is the one that has to explain the
- * mechanism, because a person looking at an empty pane has no way to guess that
+ * mechanism, because a person looking at an empty container has no way to guess that
  * the thing that fills it is a click somewhere else on the canvas.
  */
 function Sightline({ sight }: { sight: Sight }) {
@@ -243,7 +243,7 @@ function Sightline({ sight }: { sight: Sight }) {
    * The heading is new and the sentences are the ones that were already here,
    * unchanged. The reason for adding a heading rather than styling the
    * paragraph is that these seven states are read at a glance and then acted
-   * on somewhere else — in another pane, or in a terminal — and four words a
+   * on somewhere else — in another container, or in a terminal — and four words a
    * reader can take in without reading a paragraph is what decides whether
    * they act on the right one. The paragraph is still the whole answer; the
    * heading is the index into it.
@@ -287,7 +287,7 @@ function Sightline({ sight }: { sight: Sight }) {
                 : [
                     MousePointerClick,
                     'Nothing is selected',
-                    'Nothing is selected on the canvas. Pick a merge request or a pull request in another pane and its diff appears here.',
+                    'Nothing is selected on the canvas. Pick a merge request or a pull request in another container and its diff appears here.',
                   ]
 
   return (

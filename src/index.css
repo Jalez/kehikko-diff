@@ -6,12 +6,12 @@
  *
  * ## Container queries, not viewport breakpoints
  *
- * This page's normal case is a pane 220 to 400 pixels wide inside somebody's
+ * This page's normal case is a container 220 to 400 pixels wide inside somebody's
  * canvas, on a monitor two thousand pixels across. Every viewport breakpoint
  * Tailwind ships would therefore fire — `lg:` is true, `xl:` is true — and the
  * page would lay itself out for a screen it has three per cent of. So the
  * `<body>` is a named container, every responsive class in this app is a
- * `@container` class, and the only thing any of them measures is the pane.
+ * `@container` class, and the only thing any of them measures is the container.
  *
  * ## The page never scrolls sideways; the diff does
  *
@@ -25,11 +25,11 @@
  * container — `overflow-x: auto` on the body, `white-space: pre` on the lines.
  * A long line is reached by dragging inside that file, which is the gesture
  * people already use in every diff viewer, and the page around it stays exactly
- * as wide as the pane.
+ * as wide as the container.
  *
  * What makes that hold rather than merely intended is `min-width: 0` on the
  * containing flex children. Without it a flex item sizes to its content, the
- * scroll container is as wide as its widest line, and the pane grows past the
+ * scroll container is as wide as its widest line, and the container grows past the
  * frame — the exact overflow this is meant to prevent, produced by the fix for
  * it. The prose around the diff still wraps with `overflow-wrap: anywhere`,
  * because a branch name or a URL is not code.
@@ -55,7 +55,7 @@
   --radius: 0.5rem;
 
   /*
-   * The two colours the whole pane turns on, and a third for what git says
+   * The two colours the whole container turns on, and a third for what git says
    * about itself.
    *
    * Deliberately low-chroma washes behind the line rather than coloured text: a
@@ -156,18 +156,18 @@
 
   /*
    * The container every responsive class in this app measures. Named, so a
-   * `@sm/pane:` class cannot accidentally attach itself to some nested container
+   * `@sm/container:` class cannot accidentally attach itself to some nested container
    * a component introduces later.
    */
   body {
-    container: pane / inline-size;
+    container: container / inline-size;
     font-synthesis-weight: none;
     text-rendering: optimizeLegibility;
   }
 
   /*
    * Prose wraps; code does not. A branch name, a URL out of a tracker or a ref
-   * somebody typed is the one thing that would otherwise widen the pane past its
+   * somebody typed is the one thing that would otherwise widen the container past its
    * frame, and breaking it is the honest fix — the whole string stays on screen,
    * wrapped, rather than being clipped by an `overflow: hidden` that says nothing
    * about what is missing.
@@ -183,12 +183,12 @@
 
 /*
  * One file's body: the scroll container, and the only place in this app where
- * anything is allowed to be wider than the pane.
+ * anything is allowed to be wider than the container.
  *
  * `width: max-content` on the rows rather than on this element: the container is
- * the pane's width and scrolls, and its contents are as wide as the longest
+ * the container's width and scrolls, and its contents are as wide as the longest
  * line. Setting it the other way round — a wide container inside a narrow one —
- * is what pushes a pane past its frame.
+ * is what pushes a container past its frame.
  */
 .diff-scroll {
   overflow-x: auto;
@@ -202,6 +202,6 @@
   white-space: pre;
   font-variant-ligatures: none;
   /* Tab characters in source are a real thing and a tab that renders eight
-     columns wide destroys a narrow pane. Two is enough to see the indent. */
+     columns wide destroys a narrow container. Two is enough to see the indent. */
   tab-size: 2;
 }

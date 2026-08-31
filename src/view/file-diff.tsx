@@ -63,7 +63,7 @@ function Line({ line }: { line: DiffLine }) {
 
           The width is `--gutter-ch`, set once per file from the widest number in
           it — see `FileSection`. A fixed width was measured wrong: a hunk at line
-          2646 in a 220-pixel pane rendered "26462646" with the two columns
+          2646 in a 220-pixel container rendered "26462646" with the two columns
           touching, because four digits do not fit in three and a half characters
           and the overflow simply drew over the neighbour. Sizing to the content
           per ROW would fix the clipping and break the alignment, which is worse:
@@ -158,7 +158,7 @@ export function FileSection({
 
         Without it the path — one unbroken string, which is what a path is —
         sizes this flex item to its own length, the `<details>` grows past the
-        pane, and the whole page scrolls sideways. That is the failure this
+        container, and the whole page scrolls sideways. That is the failure this
         module is written against, and it is produced here, in the HEADER,
         rather than in the diff body everybody watches. The badges are
         `shrink-0` on the other side of it so a long path never squeezes the two
@@ -214,7 +214,7 @@ export function FileSection({
           /* One width for every gutter in this file, from its own largest line
              number plus a character of space. Per file rather than per patch
              because a change that touches a 12-line README and a 40,000-line
-             generated file should not spend six columns of a 220-pixel pane on
+             generated file should not spend six columns of a 220-pixel container on
              the README. */
           style={{ '--gutter-ch': `${widest + 1}ch` } as CSSProperties}
         >

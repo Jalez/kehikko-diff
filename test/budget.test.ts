@@ -36,7 +36,7 @@ describe('plan', () => {
   })
 
   test('the first file opens whatever its size', () => {
-    /* A pane whose every file is shut looks like a pane that failed. The
+    /* A container whose every file is shut looks like a container that failed. The
        per-file cap is what keeps that safe. */
     const made = plan([file('huge', 40_000), file('small', 3)])
     expect(made.open.has(0)).toBe(true)
@@ -45,7 +45,7 @@ describe('plan', () => {
 
   test('the per-file cap is smaller than the whole-patch budget', () => {
     /* If it were not, one enormous open file would defeat the budget entirely
-       and the pane would render it whole. */
+       and the container would render it whole. */
     expect(FILE_LINES).toBeLessThan(OPEN_LINES)
   })
 

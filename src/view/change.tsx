@@ -16,9 +16,9 @@ import { PatchView } from './patch-view.tsx'
  *
  * - The reference is an ISSUE. It has no diff — not an empty one, none. This is
  *   the state the brief calls out by name and it is deliberately not an error:
- *   somebody selected a thing, this pane read what kind of thing it is, and the
- *   honest answer is that this kind does not have what this pane shows.
- * - The reference is not in the reading at all. Somebody picked it from a pane
+ *   somebody selected a thing, this container read what kind of thing it is, and the
+ *   honest answer is that this kind does not have what this container shows.
+ * - The reference is not in the reading at all. Somebody picked it from a container
  *   showing another epic, or nothing has ever refreshed it.
  * - It is a change and the reading has no address for it, so nothing can be
  *   fetched.
@@ -27,7 +27,7 @@ import { PatchView } from './patch-view.tsx'
  * - The CLI said no — not logged in, no such repository, not installed.
  * - And it worked.
  *
- * A single "no diff available" over all six would be this pane telling a reader
+ * A single "no diff available" over all six would be this container telling a reader
  * nothing at the exact moment it has something specific to say.
  *
  * ## The header is drawn for every one of them
@@ -114,7 +114,7 @@ function Body({
   if (!found) {
     return note(
       epic
-        ? `Nothing in the roadmap’s reading of ${epic} is filed under ${refName}, so this app cannot tell what kind of thing it is or where it lives. That happens when a reference is picked from a pane showing another epic, or when nothing has refreshed it yet.`
+        ? `Nothing in the roadmap’s reading of ${epic} is filed under ${refName}, so this app cannot tell what kind of thing it is or where it lives. That happens when a reference is picked from a container showing another epic, or when nothing has refreshed it yet.`
         : `No epic is open, so there is no reading to look ${refName} up in.`,
     )
   }
@@ -174,7 +174,7 @@ function Body({
   if (ask.at === 'asking') {
     /* An honest spinner: something IS coming, and the sentence says what. The
        command being named is not decoration — it is the difference between a
-       reader who waits and one who wonders whether the pane is stuck. */
+       reader who waits and one who wonders whether the container is stuck. */
     return note(`Running ${found.origin === 'github' ? 'gh' : 'glab'} for the diff of ${refName}…`)
   }
 

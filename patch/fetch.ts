@@ -167,7 +167,7 @@ export function command(target: Target): { cmd: string; args: string[]; env: Rec
  * expired, a repository that is not there, a timeout — comes back as
  * `{ ok: false, error }` with the CLI's own words in it where there are any.
  * That is deliberate: `gh` says "gh auth login" when the token has gone, and
- * that sentence is worth a hundred times more to the person reading this pane
+ * that sentence is worth a hundred times more to the person reading this container
  * than "the diff could not be fetched" would be. The roadmap's own tracker layer
  * makes the same choice for the same reason.
  *
@@ -234,7 +234,7 @@ function run(target: Target): Promise<{ ok: true; text: string; truncated: boole
     })
     /* Bounded too, and much smaller: this is a sentence for a person, not a
        document. A CLI that printed a megabyte of warnings should not be able to
-       put a megabyte on a pane. */
+       put a megabyte on a container. */
     child.stderr?.on('data', (chunk: Buffer) => {
       if (err.length < 4000) err += chunk.toString('utf8')
     })

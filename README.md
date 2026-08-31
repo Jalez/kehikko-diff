@@ -13,7 +13,7 @@ bun test && bun run typecheck
 
 ## What it is
 
-One pane. Something else on the canvas — References, Journeys, anything — picks
+One container. Something else on the canvas — References, Journeys, anything — picks
 a reference; this shows its patch. Per file, collapsible, added and removed
 lines coloured and marked, line numbers in a gutter on both sides.
 
@@ -42,7 +42,7 @@ All three come out of one `live.get`:
 | --- | --- | --- |
 | issue or change | which **bag** the host filed it in — `issues`, `mrs`, `ghIssues`, `ghPrs` | the refresh knew, and filing is how it told us. Parsing the ref would be guessing at a fact we were handed |
 | which repository | the `url` on the entry | a ref is not an address |
-| which commit | the `sha` on the entry | it is the cache key, and it is the one honest caveat this pane has |
+| which commit | the `sha` on the entry | it is the cache key, and it is the one honest caveat this container has |
 
 `src/live/lookup.ts` is that reading, and it is the same reading References and
 Checklist do, in the same order, for the same reason.
@@ -69,7 +69,7 @@ The alternatives and why they lost:
   concurrent `gh` invocations started by one click in another module. And at 220
   pixels a reader is looking at one diff.
 - **Fetch none.** Refused. The overwhelming case is one change selected, and
-  making somebody press a button to see the thing they just selected is a pane
+  making somebody press a button to see the thing they just selected is a container
   that does not do its job.
 
 ## The cache, and when it is wrong
@@ -99,19 +99,19 @@ would not be in it." A cache that could not be wrong would not need that line.
 ## Big diffs
 
 A change that regenerates a lockfile is forty thousand lines, and forty thousand
-DOM nodes in a 300-pixel pane is a locked tab in the middle of somebody's
+DOM nodes in a 300-pixel container is a locked tab in the middle of somebody's
 canvas. The fix must not become the worse failure, which is truncating silently:
 a diff that quietly stopped at file eleven of thirty is worse than one that
-locked the pane, because the reader believes it.
+locked the container, because the reader believes it.
 
 So **every file is always listed** — path, status, and the counts each way — and
 only content is budgeted (`src/diff/budget.ts`):
 
 - files open from the top until 1200 lines are spent; the rest are drawn closed
-  and the pane says how many lines are behind them;
+  and the container says how many lines are behind them;
 - one file renders 800 lines at a time, with an exact count and a control to
   draw the next 800 or all of them;
-- and if the server's 8MB read cap cut the patch off mid-stream, the pane says
+- and if the server's 8MB read cap cut the patch off mid-stream, the container says
   so — that is the one case where "every file is listed" cannot be kept, and
   therefore the one that most needs saying out loud.
 
@@ -145,7 +145,7 @@ and that is what is now shut.
 ## `prompt: false`
 
 Declaring a prompt makes a host offer one, and offering one is a promise that
-what somebody types will be used. What this pane shows is fully determined twice
+what somebody types will be used. What this container shows is fully determined twice
 over: WHICH diff comes from the selection, and WHAT it says comes from
 `gh pr diff` byte for byte. There is no instruction a person could write that
 would change a line of it. `manifest.ts` has the long version, and the condition
@@ -171,9 +171,9 @@ property nobody can check.
 
 ## Layout
 
-Panes here are 220 to 400 pixels wide on a monitor two thousand across, so every
+Containers here are 220 to 400 pixels wide on a monitor two thousand across, so every
 responsive class is a **container query** and the only thing any of them measures
-is the pane.
+is the container.
 
 The page never scrolls sideways; the diff does. Other modules wrap their long
 strings, because a wrapped ref is still a readable ref — a wrapped line of code
@@ -206,7 +206,7 @@ at 220 pixels.
   and no timeout.
 - and it refetches on the epic CHANGING rather than on a context arriving. A
   context now carries the selection, so the host sends one after every selection
-  change anywhere on the canvas; refetching on each would blank this pane
+  change anywhere on the canvas; refetching on each would blank this container
   precisely when it was being asked to say something.
 
 ## The house stack, and what a diff asks of it

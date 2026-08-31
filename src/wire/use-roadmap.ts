@@ -218,7 +218,7 @@ export function useRoadmap(id: string, onGoto: GotoHandler): Roadmap {
        * epic, and it says so in the same message that names the new epic — so a
        * page that read the selection only on the branch where the epic stayed
        * put would go on drawing the previous epic's diff under the new epic's
-       * name, which is the most confident kind of wrong this pane could be.
+       * name, which is the most confident kind of wrong this container could be.
        * Reading it first means the clear lands whether the epic moved or not,
        * and the refetch below is a separate question.
        */

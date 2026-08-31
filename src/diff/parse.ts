@@ -30,7 +30,7 @@
  *
  * No intraline highlighting, no word diff, no rename detection beyond what git
  * already wrote down. Each of those is a guess dressed as information, and this
- * pane's entire claim is that it shows what the tracker said, byte for byte.
+ * container's entire claim is that it shows what the tracker said, byte for byte.
  */
 
 export type LineKind = 'context' | 'add' | 'del' | 'note'
@@ -297,7 +297,7 @@ export function parseDiff(text: string): FileDiff[] {
   return files
 }
 
-/** Every file, added and removed lines summed. What the header on the pane says. */
+/** Every file, added and removed lines summed. What the header on the container says. */
 export function totals(files: FileDiff[]): { files: number; added: number; removed: number; lines: number } {
   let added = 0
   let removed = 0

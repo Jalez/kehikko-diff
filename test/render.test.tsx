@@ -9,7 +9,7 @@ import { Change } from '../src/view/change.tsx'
 /**
  * The words on screen, asserted by rendering the real components.
  *
- * The words ARE the module: every state this pane can be in has its own
+ * The words ARE the module: every state this container can be in has its own
  * sentence, and the whole argument against a single "no diff available" is that
  * the sentences send a reader to different places. A test that checked for a
  * component rather than for what it says would let all six collapse into one
