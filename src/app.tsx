@@ -15,7 +15,7 @@ import { ID } from '../manifest.ts'
 import { askDiff } from '@/diff/ask.ts'
 import { generatedAt, index, type Found } from '@/live/lookup.ts'
 import { Change, type Ask } from '@/view/change.tsx'
-import { useRoadmap, type GotoHandler, type Sight } from '@/wire/use-roadmap.ts'
+import { useKehikot, type GotoHandler, type Sight } from '@/wire/use-kehikot.ts'
 
 /**
  * The page.
@@ -110,7 +110,7 @@ export function App() {
     answer(true, '')
   }, [])
 
-  const { sight, selection, resize } = useRoadmap(ID, onGoto)
+  const { sight, selection, resize } = useKehikot(ID, onGoto)
 
   /**
    * The references to draw, memoised on their SPELLING rather than on the array.
@@ -188,7 +188,7 @@ export function App() {
           <p className="text-[0.7rem] leading-4 text-muted-foreground">
             The diff of whichever change is selected on a canvas, file by file. The patch is read by running{' '}
             <code>gh pr diff</code> or <code>glab mr diff</code> on this machine — this app holds no token of its own —
-            and which reference is a change, where it lives and which commit is at its head all come from a roadmap’s
+            and which reference is a change, where it lives and which commit is at its head all come from Kehikot’s
             reading of the open epic. With nothing framing this page there is no selection and no reading, so there is
             nothing here to show.
           </p>
@@ -199,7 +199,7 @@ export function App() {
         <>
           <p className="text-[0.7rem] leading-4 text-muted-foreground">
             {entries.length === 1 ? 'One reference is' : `${entries.length} references are`} selected on the canvas
-            {taken ? `; the roadmap last read this epic at ${taken}` : ''}.
+            {taken ? `; Kehikot last read this epic at ${taken}` : ''}.
           </p>
           {entries.map((entry) => (
             <Change
@@ -262,9 +262,9 @@ function Sightline({ sight }: { sight: Sight }) {
             'Nothing is framing this page, so nothing has said which change to show. This app has no list of its own to fall back on: what it shows is decided entirely by what a canvas has selected.',
           ]
         : sight.at === 'no-epic'
-          ? [FolderOpen, 'No epic is open', 'A roadmap is here and no epic is open, so there is nothing to select a change out of.']
+          ? [FolderOpen, 'No epic is open', 'Kehikot is here and no epic is open, so there is nothing to select a change out of.']
           : sight.at === 'asking'
-            ? [Search, 'Asking the roadmap', `Asking the roadmap what it last read about ${sight.epic}.`]
+            ? [Search, 'Asking Kehikot', `Asking Kehikot what it last read about ${sight.epic}.`]
             : sight.at === 'refused'
               ? [
                   /* The state the brief names beside "nothing selected", and it
@@ -275,14 +275,14 @@ function Sightline({ sight }: { sight: Sight }) {
                      rather than paraphrased because they are the only thing
                      that says WHY. */
                   ShieldAlert,
-                  'The roadmap said no',
-                  `The roadmap was asked what it last read about ${sight.epic} and said no: ${sight.refusal.error} Without that reading this app cannot tell a pull request from an issue, or find out where either of them lives.`,
+                  'Kehikot said no',
+                  `Kehikot was asked what it last read about ${sight.epic} and said no: ${sight.refusal.error} Without that reading this app cannot tell a pull request from an issue, or find out where either of them lives.`,
                 ]
               : sight.at === 'unread'
                 ? [
                     RefreshCw,
                     'Nothing has been read yet',
-                    `The roadmap has no reading for ${sight.epic} — nothing has been refreshed from a tracker for it. Refresh the epic and a selected change will have an address and a head commit to fetch by.`,
+                    `Kehikot has no reading for ${sight.epic} — nothing has been refreshed from a tracker for it. Refresh the epic and a selected change will have an address and a head commit to fetch by.`,
                   ]
                 : [
                     MousePointerClick,

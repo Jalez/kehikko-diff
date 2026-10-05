@@ -82,7 +82,7 @@ export function Change({
               {/* `noreferrer` as well as `noopener`: this page may be running on
                   an opaque origin depending on how a host framed it, and a
                   referrer of "null" is no use to anybody while a real one leaks
-                  which roadmap somebody is reading. */}
+                  which host somebody is reading. */}
               <a className="underline underline-offset-2" href={found.url} target="_blank" rel="noopener noreferrer">
                 open on the tracker
               </a>
@@ -114,7 +114,7 @@ function Body({
   if (!found) {
     return note(
       epic
-        ? `Nothing in the roadmap’s reading of ${epic} is filed under ${refName}, so this app cannot tell what kind of thing it is or where it lives. That happens when a reference is picked from a container showing another epic, or when nothing has refreshed it yet.`
+        ? `Nothing in Kehikot’s reading of ${epic} is filed under ${refName}, so this app cannot tell what kind of thing it is or where it lives. That happens when a reference is picked from a container showing another epic, or when nothing has refreshed it yet.`
         : `No epic is open, so there is no reading to look ${refName} up in.`,
     )
   }
@@ -136,7 +136,7 @@ function Body({
    */
   if (found.kind === 'work') {
     return note(
-      `${refName} is an issue rather than a change, so there is no diff to show. Nothing went wrong: the roadmap filed it under issues, and an issue has no commits of its own.`,
+      `${refName} is an issue rather than a change, so there is no diff to show. Nothing went wrong: Kehikot filed it under issues, and an issue has no commits of its own.`,
     )
   }
 
@@ -210,7 +210,7 @@ function Body({
         whose diff does not match what they just pushed the fact that explains it.
       */}
       <p className="text-[0.7rem] leading-4 text-muted-foreground">
-        This is {short(ask.patch.sha)}, the head the roadmap’s last reading saw
+        This is {short(ask.patch.sha)}, the head Kehikot’s last reading saw
         {ask.patch.from === 'cache' ? ', answered from this app’s cache' : ''}. A commit pushed since that reading would
         not be in it.
       </p>

@@ -171,7 +171,7 @@ export function command(target: Target): { cmd: string; args: string[]; env: Rec
  * than "the diff could not be fetched" would be. The roadmap's own tracker layer
  * makes the same choice for the same reason.
  *
- * Not retried, unlike the roadmap's `json()`. That function retries because a
+ * Not retried, unlike Kehikot's `json()`. That function retries because a
  * dropped read there would quietly SHRINK what an epic tracks — a wrong answer
  * nobody sees. Here a failure is a sentence on screen next to a button that says
  * try again, so the person is the retry, and they get to see that it failed at

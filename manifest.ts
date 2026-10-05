@@ -1,6 +1,6 @@
-import { MANIFEST_KIND, PROTOCOL, manifestSchema, type Manifest } from 'roadmap-module-protocol'
+import { MANIFEST_KIND, PROTOCOL, manifestSchema, type Manifest } from 'kehikot-module-protocol'
 
-export const ID = 'roadmap.diff'
+export const ID = 'kehikot.diff'
 export const VERSION = '1.0.0'
 
 /**
@@ -10,7 +10,7 @@ export const VERSION = '1.0.0'
  * It used to be said twice — `--port "${PORT:-7890}"` on the last line of
  * `run.sh` and `Number(process.env.PORT ?? 7890)` in `register.ts` — with
  * nothing keeping the two in step, and a third copy of the number sitting in
- * `~/.roadmap/modules` from whenever somebody last ran the second. Moving this
+ * the module registry from whenever somebody last ran the second. Moving this
  * app was two edits and a thing to remember.
  *
  * It is here rather than in `vite.config.ts` because `register.ts` needs it too,
@@ -20,7 +20,7 @@ export const VERSION = '1.0.0'
  * It is a PREFERENCE and not a promise. 7820 through 7960 belong to the other
  * modules on this machine, and if something else holds 7890 when this starts
  * then `serves()` moves to the next free port and rewrites the registration to
- * match — see `roadmap-module-protocol/serve`. A host reads the registry, so the
+ * match — see `kehikot-module-protocol/serve`. A host reads the registry, so the
  * registry is what has to be true; this number is only where to start looking.
  */
 export const PREFERRED_PORT = 7890
@@ -205,7 +205,7 @@ export const MANIFEST: Manifest = manifestSchema.parse({
    * half, written down.
    *
    * It changes nothing about what this app is given. The selection arrives in
-   * `roadmap.context` whether or not this line exists, and if a host ever
+   * `kehikot.context` whether or not this line exists, and if a host ever
    * started withholding the context from modules that had not declared an
    * interest, that host would have turned a line of documentation into a
    * permission over something it was already broadcasting. Nothing here is
