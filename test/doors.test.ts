@@ -54,7 +54,7 @@ describe('manifest', () => {
     /* The parse happens in `manifest.ts` itself; this asserts the result is the
        one this module means to publish. A summary one character over the
        protocol's limit should stop this process rather than a host's. */
-    expect(MANIFEST.id).toBe('roadmap.diff')
+    expect(MANIFEST.id).toBe('kehikot.diff')
     expect(MANIFEST.entry).toBe('/')
   })
 

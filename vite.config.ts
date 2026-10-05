@@ -3,8 +3,8 @@ import { resolve } from 'node:path'
 
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { WELL_KNOWN } from 'roadmap-module-protocol'
-import { serves } from 'roadmap-module-protocol/serve'
+import { LEGACY_WELL_KNOWN, WELL_KNOWN, legacyManifest } from 'kehikot-module-protocol'
+import { frameAncestors, serves } from 'kehikot-module-protocol/serve'
 import { defineConfig, type Plugin } from 'vite'
 
 import { MANIFEST, answer } from './doors.ts'
@@ -42,6 +42,11 @@ function doors(): Plugin {
            disagree about it by a character. */
         if (path === WELL_KNOWN) return send(200, MANIFEST)
 
+        /* The same manifest in the spelling a host from before the rename asks
+           for, so that host still finds this module. It greets in that
+           dialect and the protocol's client answers in it. */
+        if (path === LEGACY_WELL_KNOWN) return send(200, legacyManifest(MANIFEST))
+
         /*
          * The page, served here rather than left to Vite's own index handling,
          * for one header.
@@ -52,7 +57,7 @@ function doors(): Plugin {
          * page anywhere could frame this one, and while there is nothing here to
          * click that would hurt anybody, an origin that answers a credentialed
          * door should not also be silently embeddable. It is deliberately not a
-         * list of one — whoever runs this decides, through `ROADMAP_ORIGIN`, and
+         * list of one — whoever runs this decides, through `KEHIKOT_ORIGIN` (or the older `ROADMAP_ORIGIN`), via `frameAncestors()`, and
          * the default is the address the host in this workspace actually serves
          * on. `'self'` is in it so that opening this page directly still works.
          *
@@ -68,7 +73,7 @@ function doors(): Plugin {
               response.setHeader('content-type', 'text/html; charset=utf-8')
               response.setHeader(
                 'content-security-policy',
-                `frame-ancestors 'self' ${process.env.ROADMAP_ORIGIN ?? 'http://127.0.0.1:4181 http://localhost:4181'}`,
+                frameAncestors(),
               )
               response.end(html)
             })
@@ -123,7 +128,7 @@ function doors(): Plugin {
  * to be running. Turning it off costs this page nothing, because everything it
  * fetches is its own origin.
  *
- * ## No alias for `roadmap-module-protocol`
+ * ## No alias for `kehikot-module-protocol`
  *
  * There is none, and there must not be. The package's `exports` are correct,
  * reaching past them is what made a whole class of bug possible, and a module
@@ -136,7 +141,7 @@ function doors(): Plugin {
  * reinstalls, and a stale one silently STRIPS schema fields it has never heard
  * of. The symptom is a host message that visibly carries `selection` and a page
  * that sees it missing, with nothing anywhere erroring.
- * `grep -c selection node_modules/.vite/deps/roadmap-module-protocol.js` says
+ * `grep -c selection node_modules/.vite/deps/kehikot-module-protocol.js` says
  * whether the copy in play knows the field; `touch vite.config.ts` makes Vite
  * re-optimise.
  *

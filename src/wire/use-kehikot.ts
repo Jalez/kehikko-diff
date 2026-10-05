@@ -6,12 +6,12 @@ import {
   type Connection,
   type HostEvents,
   type Refusal,
-} from 'roadmap-module-protocol/client'
+} from 'kehikot-module-protocol/client'
 
 /**
  * The bridge, as one React value.
  *
- * `roadmap-module-protocol/client` is the wire and knows no React; this is the
+ * `kehikot-module-protocol/client` is the wire and knows no React; this is the
  * only file that turns messages into state, and it is deliberately the only
  * one. Two places driving "what can this page see" would eventually disagree,
  * and this module's whole honesty rests on telling one absence from another — a
@@ -32,7 +32,7 @@ import {
  *
  * The second is the field-by-field rebuild of the context. What stood in
  * `host.ts` named `epic`, `project`, `theme`, `selection`, `prompt`, `pinned`
- * and `kehikko` — and therefore dropped `projectPath` on every `roadmap.context`
+ * and `kehikko` — and therefore dropped `projectPath` on every `kehikot.context`
  * this page received, silently. The client spreads the message instead, so it
  * arrives now. Nothing here reads it yet; what changed is that it reaches the
  * code that might.
@@ -78,7 +78,7 @@ export interface Roadmap {
    * `selection:set`, has no control that would set one, and its entire job is to
    * answer a question about what somebody else picked. So this is a fact
    * arriving, in the same family as which epic is open, and the only place it
-   * comes from is `roadmap.context`.
+   * comes from is `kehikot.context`.
    */
   selection: string[]
   /** Say how tall this page would like its frame to be. Silent when nothing is framing it. */
@@ -95,7 +95,7 @@ export interface Roadmap {
  */
 export type GotoHandler = NonNullable<HostEvents['onGoto']>
 
-export function useRoadmap(id: string, onGoto: GotoHandler): Roadmap {
+export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
   const [sight, setSight] = useState<Sight>({ at: 'listening' })
   const [selection, setSelection] = useState<string[]>([])
   const host = useRef<Connection | null>(null)

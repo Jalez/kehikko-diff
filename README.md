@@ -2,7 +2,7 @@
 
 The diff of whichever change is selected on the canvas, file by file.
 
-An app: its own page, its own port, its own cache. A roadmap may frame it, and
+An app: its own page, its own port, its own cache. A Kehikot host may frame it, and
 then it knows which change to look at.
 
 ```
@@ -49,7 +49,7 @@ Checklist do, in the same order, for the same reason.
 
 **A selected reference that is an ISSUE has no diff.** That is an ordinary state
 with its own sentence — "gh#131 is an issue rather than a change, so there is no
-diff to show. Nothing went wrong: the roadmap filed it under issues, and an
+diff to show. Nothing went wrong: Kehikot filed it under issues, and an
 issue has no commits of its own" — and never an error.
 
 ## Several references selected
@@ -93,7 +93,7 @@ detect that; detecting it would mean asking the forge, which is the call the
 cache exists to avoid.
 
 So the sha travels to the screen. Every rendered patch says "This is 48d720233,
-the head the roadmap's last reading saw. A commit pushed since that reading
+the head Kehikot's last reading saw. A commit pushed since that reading
 would not be in it." A cache that could not be wrong would not need that line.
 
 ## Big diffs
@@ -200,7 +200,7 @@ at 220 pixels.
   A host greets on the frame's `load` event, which is strictly before React's
   effects run; without this the greeting arrives at a page that is not listening
   yet and nothing ever retries.
-- `use-roadmap.ts` stores the connection **before** acting on the greeting,
+- `use-kehikot.ts` stores the connection **before** acting on the greeting,
   because the mailbox replays synchronously inside `connect()` — in References
   that order left a page reading "Asking about…" for ever, with no question sent
   and no timeout.
@@ -234,7 +234,7 @@ than a page of controls:
   button there breaks the sentence in half and pushes the number that gives it
   meaning onto its own line at 220 pixels.
 
-The theme comes from `roadmap.context.theme` and nowhere else: `use-roadmap.ts`
+The theme comes from `kehikot.context.theme` and nowhere else: `use-kehikot.ts`
 puts `dark` or `light` on the root element and the `dark:` variant is defined as
 `&:where(.dark, .dark *)`, so a host asking for light on a machine set to dark
 gets light. The media query in `index.css` is guarded on `:not(.light)` and

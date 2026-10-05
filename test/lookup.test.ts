@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { generatedAt, index } from '../src/live/lookup.ts'
 
-/** A reading shaped exactly like `data/state/modes-are-modules.json` in the roadmap. */
+/** A reading shaped exactly like `data/state/modes-are-modules.json` in the old roadmap app. */
 const LIVE = {
   generated: '2026-08-26T20:40:27Z',
   issues: { '7': { state: 'opened', title: 'a gitlab issue', url: 'https://gitlab.com/g/p/-/issues/7' } },

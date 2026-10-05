@@ -35,7 +35,7 @@ const nothing = () => {}
 describe('Change', () => {
   test('an issue says it is an issue and why that means no diff', () => {
     /* The state the brief names. It is not an error and must never read as one:
-       the roadmap filed it under issues, and an issue has no commits of its own. */
+       Kehikot filed it under issues, and an issue has no commits of its own. */
     render(
       <Change
         refName="gh#131"
