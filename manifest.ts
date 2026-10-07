@@ -170,6 +170,8 @@ export const MANIFEST: Manifest = manifestSchema.parse({
   id: ID,
   name: 'Diff',
   version: VERSION,
+  /* Where a host files this module in its list, most fitting first. */
+  tags: ['code', 'review'],
   summary: 'The diff of whichever change is selected on the canvas, file by file.',
   /**
    * What an agent should do about this module being here.
