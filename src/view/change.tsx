@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import type { Patch } from '@/diff/ask.ts'
+import type { Head } from '@/live/heads.ts'
 import type { Found } from '@/live/lookup.ts'
 
 import { PatchView } from './patch-view.tsx'
@@ -22,8 +23,9 @@ import { PatchView } from './patch-view.tsx'
  *   showing another epic, or nothing has ever refreshed it.
  * - It is a change and the reading has no address for it, so nothing can be
  *   fetched.
- * - It is a change whose head commit the reading does not name, so a diff
- *   fetched now could not be filed against anything.
+ * - It is a change whose head commit nobody has named — the tracker is still
+ *   being asked, or was asked and has none — so a diff fetched now could not
+ *   be filed against anything.
  * - The CLI said no — not logged in, no such repository, not installed.
  * - And it worked.
  *
@@ -48,12 +50,15 @@ const short = (sha: string) => (sha.length > 9 ? sha.slice(0, 9) : sha)
 export function Change({
   refName,
   found,
+  head,
   ask,
   onAsk,
   epic,
 }: {
   refName: string
   found: Found | undefined
+  /** What the tracker said about this change's head commit, when it was asked. */
+  head?: Head
   ask: Ask | undefined
   onAsk: () => void
   epic: string | null
@@ -91,7 +96,7 @@ export function Change({
         </p>
       ) : null}
 
-      <Body refName={refName} found={found} ask={ask} onAsk={onAsk} epic={epic} />
+      <Body refName={refName} found={found} head={head} ask={ask} onAsk={onAsk} epic={epic} />
     </section>
   )
 }
@@ -99,12 +104,14 @@ export function Change({
 function Body({
   refName,
   found,
+  head,
   ask,
   onAsk,
   epic,
 }: {
   refName: string
   found: Found | undefined
+  head: Head | undefined
   ask: Ask | undefined
   onAsk: () => void
   epic: string | null
@@ -147,13 +154,25 @@ function Body({
   }
 
   if (!found.sha) {
+    /* Something IS coming: the host answers what it holds at once and reads the
+       rest, and this page asks again when that read lands. Said as what is
+       being waited for, because the sentence below is about a head nobody has,
+       and that is not yet known to be true. */
+    if (head?.at === 'asking') return note(`Asking the tracker for ${refName}’s head commit…`)
+
     /* Refused here rather than fetched anyway, and the reason is the cache. Every
        patch is filed under the head commit it belongs to; a fetch with no sha
        would have to be filed under nothing, which is a key every unshaed change
        would share — one change's diff answering under another change's name.
-       That is the worst way this could go wrong, so it is not possible. */
+       That is the worst way this could go wrong, so it is not possible.
+
+       The sentence says why there is none, in the tracker's terms, and offers a
+       refresh only where one would change the answer: a read that failed can
+       succeed, and a reference the tracker does not have will not appear. */
+    const why = head?.at === 'none' ? head.why : 'the tracker has not been asked'
+    const retry = head?.at === 'none' && /failed|did not come back|would not say/.test(head.why)
     return note(
-      `The reading names no head commit for ${refName}, so a diff fetched now could not be filed against anything and this app will not guess. Refresh the epic and it will be there.`,
+      `Nobody has named a head commit for ${refName} — ${why} — so a diff fetched now could not be filed against anything and this app will not guess.${retry ? ' Refreshing the trackers may bring it.' : ''}`,
     )
   }
 
@@ -210,7 +229,8 @@ function Body({
         whose diff does not match what they just pushed the fact that explains it.
       */}
       <p className="text-[0.7rem] leading-4 text-muted-foreground">
-        This is {short(ask.patch.sha)}, the head Kehikot’s last reading saw
+        This is {short(ask.patch.sha)},{' '}
+        {head?.at === 'known' ? 'the head the tracker last reported' : 'the head Kehikot’s last reading of the epic saw'}
         {ask.patch.from === 'cache' ? ', answered from this app’s cache' : ''}. A commit pushed since that reading would
         not be in it.
       </p>

@@ -33,9 +33,9 @@ export const PREFERRED_PORT = 7890
  * the ENRICHMENT rather than of the app: it says which tab to give the page and
  * which one question the app would like to ask if there is anybody there to ask.
  *
- * ## `live:read`, and nothing else
+ * ## `live:read` and `trackers:read`
  *
- * One capability, and it is not the one a reader would guess. The obvious guess
+ * Two capabilities, and neither is the one a reader would guess. The obvious guess
  * is that a diff module needs to reach GitHub — it does, and there is no
  * capability for that and never will be: the tracker CLIs on this machine hold
  * the credentials, this app shells out to them from its own server, and a host
@@ -50,11 +50,19 @@ export const PREFERRED_PORT = 7890
  * in one sequence, so nothing about the string will ever say. It also does not
  * say which repository it belongs to, or which commit is at its head.
  *
- * All three come out of one `live.get`. The bag a host's own refresh filed the
- * ref in is the only thing that says what it is; the `url` in that bag says
- * which repository; the `sha` says which commit the diff belongs to, which is
- * what this app's cache is keyed on. Without `live:read` this module has a list
- * of strings and no way to turn any of them into a command.
+ * The first two come out of one `live.get`. The bag a host's own refresh filed
+ * the ref in is the only thing that says what it is, and the `url` in that bag
+ * says which repository. Without `live:read` this module has a list of strings
+ * and no way to turn any of them into a command.
+ *
+ * The third — which commit the diff belongs to, which is what this app's cache
+ * is keyed on — is `trackers:read`. `live.get` carries a `sha` only for an epic
+ * with an imported state file, and that one is as old as the import; the head
+ * the tracker reports is in a ref's detail in the host's shared tracker
+ * reading, read only for refs somebody asks the detail of. So this app asks
+ * `tracker.get` for the changes that are selected, and `reacts` to `tracker`
+ * because the answer to a first ask is usually "not read yet". See
+ * `src/live/heads.ts`.
  *
  * Deliberately absent:
  *
@@ -214,15 +222,19 @@ export const MANIFEST: Manifest = manifestSchema.parse({
    * asked for and nothing is granted; see the essay on `reacts` in the
    * protocol's `manifest.ts`.
    *
+   * `tracker` is here because the head commit of a selected change is asked of
+   * the host's tracker reading, and the first answer is usually "not read yet":
+   * the reading moving is what says to ask again. See `src/live/heads.ts`.
+   *
    * `passage` is deliberately not here. A patch is a change to a repository, and where
    * somebody is pointing inside a `.tex` says nothing about which change to
    * show. Ticking a word here that the code does not act on would put a name
    * in somebody's registry that is not true of this program.
    */
-  reacts: ['selection'],
+  reacts: ['selection', 'tracker'],
   declares: {
     protocol: `>=${PROTOCOL} <${PROTOCOL + 1}`,
-    uses: ['live:read'],
+    uses: ['live:read', 'trackers:read'],
     storage: true,
     prompt: false,
   },

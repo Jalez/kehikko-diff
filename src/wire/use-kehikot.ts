@@ -7,6 +7,9 @@ import {
   type HostEvents,
   type Refusal,
 } from 'kehikot-module-protocol/client'
+import { LIMITS } from 'kehikot-module-protocol'
+
+import { readHeads, type Head, type Heads } from '@/live/heads.ts'
 
 /**
  * The bridge, as one React value.
@@ -81,6 +84,18 @@ export interface Roadmap {
    * comes from is `kehikot.context`.
    */
   selection: string[]
+  /**
+   * The head commit of each change this page asked the tracker about, or that
+   * it is still being asked, or why there is none. See `live/heads.ts`.
+   */
+  heads: Heads
+  /**
+   * When the host's shared tracker reading last changed, as the context says.
+   * It moving is the signal that a detail asked for earlier may have landed.
+   */
+  trackerAt: string | null
+  /** Ask the host for the head commit of these changes. Safe to call again with the same refs. */
+  askHeads: (refs: readonly string[]) => void
   /** Say how tall this page would like its frame to be. Silent when nothing is framing it. */
   resize: (height: number) => void
 }
@@ -98,6 +113,8 @@ export type GotoHandler = NonNullable<HostEvents['onGoto']>
 export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
   const [sight, setSight] = useState<Sight>({ at: 'listening' })
   const [selection, setSelection] = useState<string[]>([])
+  const [heads, setHeads] = useState<Heads>({})
+  const [trackerAt, setTrackerAt] = useState<string | null>(null)
   const host = useRef<Connection | null>(null)
 
   /**
@@ -204,6 +221,46 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
       })
   }, [])
 
+  /**
+   * Ask the tracker reading for the head commit of some changes.
+   *
+   * `detail: 'detail'`, because the head commit is in a ref's detail and the
+   * host reads a detail only for refs somebody asked it of — which is why a
+   * page that only ever asked `live.get` never saw one. The host answers at
+   * once from what it holds and starts a read for the rest; the view asks
+   * again when `trackerAt` moves.
+   *
+   * A refusal is an answer too: a host that keeps no tracker reading, or one
+   * that will not give this module `trackers:read`, leaves every ref with no
+   * head from here, and the page falls back to the one the epic's own reading
+   * carries. Nothing here retries.
+   *
+   * The same `asking` number as `look`: an answer about the epic that was just
+   * left must not file its heads under the one that is open now.
+   */
+  const askHeads = useCallback((refs: readonly string[]) => {
+    const current = host.current
+    if (!current || !refs.length) return
+    const asked = refs.slice(0, LIMITS.TRACKER_ASK)
+    const mine = asking.current
+    const fill = (made: (was: Heads) => Record<string, Head>) =>
+      setHeads((was) => (asking.current === mine ? { ...was, ...made(was) } : was))
+    /* Said at once, so the page reads "asking the tracker" rather than the
+       sentence for a head nobody has. `since` is filled in by the answer. */
+    fill((was) =>
+      Object.fromEntries(asked.filter((ref) => !Object.hasOwn(was, ref)).map((ref) => [ref, { at: 'asking', since: undefined } as Head])),
+    )
+    void current
+      .request('tracker.get', { refs: asked, detail: 'detail' })
+      .then((data) => fill((was) => readHeads(asked, data, was)))
+      .catch((error: unknown) => {
+        const why =
+          error instanceof HostRefused ? `Kehikot would not say: ${error.refusal.error}` : 'this app failed while reading the host’s answer'
+        /* A head already known survives a refusal; only the unanswered ones give up. */
+        fill((was) => Object.fromEntries(asked.filter((ref) => was[ref]?.at !== 'known').map((ref) => [ref, { at: 'none', why } as Head])))
+      })
+  }, [])
+
   useEffect(() => {
     /**
      * What the greeting and every later context both do.
@@ -214,7 +271,10 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
      * `dark`, so that a host asking for light over a machine set to dark actually
      * gets it — see the media query in `index.css`.
      */
-    const arrived = (context: { epic: string | null; theme: 'light' | 'dark'; selection: string[] }, greeting: boolean) => {
+    const arrived = (
+      context: { epic: string | null; theme: 'light' | 'dark'; selection: string[]; tracker?: { at: string | null } },
+      greeting: boolean,
+    ) => {
       /* A greeting always re-asks, because a greeting means the conversation is
          new: the host greets on every frame LOAD, so one arriving is a page that
          has just come into existence, or a frame that reloaded and has forgotten
@@ -249,10 +309,17 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
        * and the refetch below is a separate question.
        */
       setSelection(context.selection)
+      /* Absent from a host older than the shared tracker reading, and then it
+         never moves — which is right: such a host has no detail to wait for. */
+      setTrackerAt(context.tracker?.at ?? null)
 
       const moved = context.epic !== standingOn.current
       standingOn.current = context.epic
       if (!moved) return
+
+      /* The heads were asked for the epic that was open. A ref spelled the same
+         in the next one is the next one's to ask about. */
+      setHeads({})
 
       if (context.epic) look(context.epic)
       else {
@@ -310,5 +377,8 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
 
   const resize = useCallback((height: number) => host.current?.resize(height), [])
 
-  return useMemo(() => ({ sight, selection, resize }), [sight, selection, resize])
+  return useMemo(
+    () => ({ sight, selection, heads, trackerAt, askHeads, resize }),
+    [sight, selection, heads, trackerAt, askHeads, resize],
+  )
 }

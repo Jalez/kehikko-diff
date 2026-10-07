@@ -58,8 +58,10 @@ describe('manifest', () => {
     expect(MANIFEST.entry).toBe('/')
   })
 
-  test('it asks for the one capability it cannot work without, and no others', () => {
-    expect(MANIFEST.declares.uses).toEqual(['live:read'])
+  test('it asks for the two capabilities it cannot work without, and no others', () => {
+    /* What a ref is and where it lives, and which commit is at its head. */
+    expect(MANIFEST.declares.uses).toEqual(['live:read', 'trackers:read'])
+    expect(MANIFEST.reacts).toEqual(['selection', 'tracker'])
   })
 
   test('storage is declared, which is what keeps the credentialed door same-origin', () => {
