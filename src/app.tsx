@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ID } from '../manifest.ts'
 
 import { askDiff } from '@/diff/ask.ts'
+import { headFor, type Head } from '@/live/heads.ts'
 import { generatedAt, index, type Found } from '@/live/lookup.ts'
 import { Change, type Ask } from '@/view/change.tsx'
 import { useKehikot, type GotoHandler, type Sight } from '@/wire/use-kehikot.ts'
@@ -24,10 +25,11 @@ import { useKehikot, type GotoHandler, type Sight } from '@/wire/use-kehikot.ts'
  *
  * The diff of whichever change is selected on the canvas. The selection arrives
  * as `context.selection` — refs and nothing else, deliberately — and everything
- * that turns `gh#105` into a patch comes from one `live.get`: the bag says it is
- * a change, the `url` says which repository, the `sha` says which commit. See
+ * that turns `gh#105` into a patch comes from the host: one `live.get`, whose
+ * bag says it is a change and whose `url` says which repository, and the
+ * tracker reading's detail for which commit is at its head. See
  * `live/lookup.ts` for why the bag is the only thing that can say the first of
- * those.
+ * those, and `live/heads.ts` for why the head is asked for separately.
  *
  * ## Several references selected, and what this container does about it
  *
@@ -110,7 +112,7 @@ export function App() {
     answer(true, '')
   }, [])
 
-  const { sight, selection, resize } = useKehikot(ID, onGoto)
+  const { sight, selection, heads, trackerAt, askHeads, resize } = useKehikot(ID, onGoto)
 
   /**
    * The references to draw, memoised on their SPELLING rather than on the array.
@@ -128,7 +130,46 @@ export function App() {
   /** Everything the open epic's reading says, by the spelling people write. */
   const reading = useMemo(() => (sight.at === 'read' ? index(sight.live) : new Map<string, Found>()), [sight])
 
-  const entries = useMemo(() => refs.map((ref) => ({ ref, found: reading.get(ref) })), [refs, reading])
+  /**
+   * The selected references that are changes, which is exactly the set whose
+   * head commit is worth asking the tracker for. An issue has none, and a
+   * detail read costs a call at the tracker per ref.
+   *
+   * Asked when the set changes and again whenever the tracker reading moves:
+   * the first answer is usually "not read yet", and the reading moving is how
+   * the host says the detail it then went to fetch has landed.
+   */
+  const changes = useMemo(
+    () => refs.filter((ref) => {
+      const found = reading.get(ref)
+      return found !== undefined && !found.unreadable && found.kind === 'change'
+    }).join(' '),
+    [refs, reading],
+  )
+  useEffect(() => {
+    if (changes) askHeads(changes.split(' '))
+  }, [changes, trackerAt, askHeads])
+
+  /**
+   * Each reference with the commit its diff belongs to: the tracker's head when
+   * it has said, none while it is being asked, and otherwise the one the epic's
+   * reading carries. Everything below — the cache key, the automatic fetch —
+   * reads `found.sha` and so follows the tracker without knowing it exists.
+   */
+  const entries = useMemo(
+    () =>
+      refs.map((ref) => {
+        const found = reading.get(ref)
+        if (!found || found.unreadable || found.kind !== 'change') return { ref, head: undefined, found }
+        /* A change nobody has asked about yet is about to be: the effect above
+           runs after this render. Reading it as `asking` already is what stops
+           the automatic fetch going out for the reading's older head in the one
+           render between learning a change exists and asking the tracker. */
+        const head: Head = Object.hasOwn(heads, ref) ? heads[ref]! : { at: 'asking', since: undefined }
+        return { ref, head, found: { ...found, sha: headFor(found.sha, head) } }
+      }),
+    [refs, reading, heads],
+  )
 
   const ask = useCallback((found: Found) => {
     const at = `${found.ref}|${found.sha}`
@@ -189,7 +230,7 @@ export function App() {
             The diff of whichever change is selected on a canvas, file by file. The patch is read by running{' '}
             <code>gh pr diff</code> or <code>glab mr diff</code> on this machine — this app holds no token of its own —
             and which reference is a change, where it lives and which commit is at its head all come from Kehikot’s
-            reading of the open epic. With nothing framing this page there is no selection and no reading, so there is
+            reading of the open epic and of the trackers. With nothing framing this page there is no selection and no reading, so there is
             nothing here to show.
           </p>
         </header>
@@ -206,6 +247,7 @@ export function App() {
               key={entry.ref}
               refName={entry.ref}
               found={entry.found}
+              head={entry.head}
               ask={entry.found ? got[`${entry.found.ref}|${entry.found.sha}`] : undefined}
               onAsk={() => entry.found && ask(entry.found)}
               epic={epic}

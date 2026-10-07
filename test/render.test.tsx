@@ -61,7 +61,28 @@ describe('Change', () => {
 
   test('a change with no head commit is refused in words rather than fetched', () => {
     render(<Change refName="gh#105" found={change({ sha: '' })} ask={undefined} onAsk={nothing} epic="e" />)
-    expect(screen.getByText(/names no head commit/)).toBeTruthy()
+    expect(screen.getByText(/Nobody has named a head commit for gh#105/)).toBeTruthy()
+  })
+
+  test('while the tracker is being asked for the head, it says that and not that there is none', () => {
+    const { container } = render(
+      <Change refName="!3105" found={change({ ref: '!3105', sha: '' })} head={{ at: 'asking', since: null }} ask={undefined} onAsk={nothing} epic="e" />,
+    )
+    expect(container.textContent).toContain('Asking the tracker for !3105’s head commit…')
+    expect(container.textContent).not.toContain('Nobody has named')
+  })
+
+  test('with no head, it says why, and suggests a refresh only where one would help', () => {
+    const failed = render(
+      <Change refName="!1" found={change({ ref: '!1', sha: '' })} head={{ at: 'none', why: 'the last read of its tracker failed' }} ask={undefined} onAsk={nothing} epic="e" />,
+    )
+    expect(failed.container.textContent).toContain('the last read of its tracker failed')
+    expect(failed.container.textContent).toContain('Refreshing the trackers may bring it.')
+    const absent = render(
+      <Change refName="!2" found={change({ ref: '!2', sha: '' })} head={{ at: 'none', why: 'the tracker has nothing under that reference' }} ask={undefined} onAsk={nothing} epic="e" />,
+    )
+    expect(absent.container.textContent).toContain('the tracker has nothing under that reference')
+    expect(absent.container.textContent).not.toContain('Refresh')
   })
 
   test('a change that has not been asked for offers to ask, and says what that costs', () => {
