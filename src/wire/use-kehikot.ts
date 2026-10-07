@@ -255,7 +255,12 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
       if (!moved) return
 
       if (context.epic) look(context.epic)
-      else setSight({ at: 'no-epic' })
+      else {
+        /* Moving to no epic is a move like any other: whatever `live.get` is
+           still out was asked about the epic that was just closed. */
+        asking.current += 1
+        setSight({ at: 'no-epic' })
+      }
     }
 
     /**
