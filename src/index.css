@@ -13,26 +13,28 @@
  * `<body>` is a named container, every responsive class in this app is a
  * `@container` class, and the only thing any of them measures is the container.
  *
- * ## The page never scrolls sideways; the diff does
+ * ## Nothing scrolls sideways, and a long line wraps under itself
  *
- * This is the rule this module exists under, and it is not the same rule the
- * other modules keep. References and Checklist wrap their long strings, because
- * a wrapped ref is still a readable ref. A wrapped line of code is not: the
- * whole point of a diff is that a line is a line, and reflowing one at 220
- * pixels turns a function into a paragraph and makes the +/- columns meaningless.
+ * This module used to keep a different rule from the others: code did not wrap,
+ * and every file's body was its own sideways scroll container, on the argument
+ * that a line is a line and reflowing one turns a function into a paragraph.
+ * In use that was wrong. One long line — a minified string, an import, a
+ * sentence in a Markdown file — put a scrollbar under every file that had one,
+ * and reading the end of it meant dragging each file separately while the rest
+ * of its lines slid out of view.
  *
- * So the code does NOT wrap, and instead every file's body is its own scroll
- * container — `overflow-x: auto` on the body, `white-space: pre` on the lines.
- * A long line is reached by dragging inside that file, which is the gesture
- * people already use in every diff viewer, and the page around it stays exactly
- * as wide as the container.
+ * So a long line wraps, and what keeps a line a line is the gutter rather than
+ * the width. The two numbers and the +/- mark are fixed columns that do not
+ * shrink, and only the text beside them wraps, so a continuation hangs under
+ * the text it continues and never under a number. A wrapped line has one number
+ * and one mark; the next number down is the next line. `pre-wrap` keeps every
+ * space and tab as written, so indentation survives, and `overflow-wrap:
+ * anywhere` breaks the one thing `pre-wrap` alone would not: a run with no
+ * space in it, which is what a long URL or a hash is.
  *
- * What makes that hold rather than merely intended is `min-width: 0` on the
- * containing flex children. Without it a flex item sizes to its content, the
- * scroll container is as wide as its widest line, and the container grows past the
- * frame — the exact overflow this is meant to prevent, produced by the fix for
- * it. The prose around the diff still wraps with `overflow-wrap: anywhere`,
- * because a branch name or a URL is not code.
+ * `min-width: 0` on the text is what makes it hold. Without it a flex item
+ * sizes to its content, the row is as wide as its longest line, and the
+ * container grows past the frame.
  *
  * A test at 220, 280, 320 and 400 pixels asserts the result rather than the
  * technique.
@@ -182,24 +184,13 @@
 }
 
 /*
- * One file's body: the scroll container, and the only place in this app where
- * anything is allowed to be wider than the container.
- *
- * `width: max-content` on the rows rather than on this element: the container is
- * the container's width and scrolls, and its contents are as wide as the longest
- * line. Setting it the other way round — a wide container inside a narrow one —
- * is what pushes a container past its frame.
+ * One line of a file. A flex row: fixed gutters, then text that takes what is
+ * left and wraps inside it. See the essay at the top for why it wraps.
  */
-.diff-scroll {
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-}
-
 .diff-row {
   display: flex;
-  width: max-content;
-  min-width: 100%;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-variant-ligatures: none;
   /* Tab characters in source are a real thing and a tab that renders eight
      columns wide destroys a narrow container. Two is enough to see the indent. */
