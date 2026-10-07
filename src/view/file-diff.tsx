@@ -71,7 +71,11 @@ function Line({ line }: { line: DiffLine }) {
       <span className="w-[var(--gutter-ch)] shrink-0 select-none pr-1 text-right text-gutter">{line.old ?? ''}</span>
       <span className="w-[var(--gutter-ch)] shrink-0 select-none pr-1 text-right text-gutter">{line.new ?? ''}</span>
       <span className={cn('w-[1.5ch] shrink-0 select-none', markTone)}>{mark}</span>
-      <span className="pr-2">{line.text}</span>
+      {/* The one part of the row that gives: it takes the width the gutters
+          leave and wraps inside it, so a long line continues under its own
+          text. `min-w-0` because a flex item otherwise refuses to be narrower
+          than its longest unbroken run, which is the sideways scroll again. */}
+      <span className="min-w-0 flex-1 pr-2">{line.text}</span>
     </div>
   )
 }
@@ -210,7 +214,7 @@ export function FileSection({
         </p>
       ) : (
         <div
-          className="diff-scroll border-t font-mono text-[0.65rem] leading-[1.35]"
+          className="diff-body min-w-0 border-t font-mono text-[0.65rem] leading-[1.35]"
           /* One width for every gutter in this file, from its own largest line
              number plus a character of space. Per file rather than per patch
              because a change that touches a 12-line README and a 40,000-line
@@ -221,7 +225,7 @@ export function FileSection({
           {rows.map((row, at) =>
             row.at === 'hunk' ? (
               <div key={at} className="diff-row bg-muted px-1 text-muted-foreground">
-                {row.header}
+                <span className="min-w-0 flex-1">{row.header}</span>
               </div>
             ) : (
               <Line key={at} line={row.line} />

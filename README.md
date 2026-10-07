@@ -175,22 +175,23 @@ Containers here are 220 to 400 pixels wide on a monitor two thousand across, so 
 responsive class is a **container query** and the only thing any of them measures
 is the container.
 
-The page never scrolls sideways; the diff does. Other modules wrap their long
-strings, because a wrapped ref is still a readable ref — a wrapped line of code
-is not. So the code does not wrap and every file's body is its own
-`overflow-x: auto` container, held there by `min-width: 0` on the flex children.
+Nothing scrolls sideways, the diff included. A long line wraps inside its own
+text column, and what keeps a line a line is the gutter: the two numbers and the
++/- mark are fixed columns, so a continuation hangs under the text it continues
+and the next number down is the next line. `pre-wrap` keeps indentation as
+written, `overflow-wrap: anywhere` breaks a run with no space in it, and
+`min-width: 0` on the text is what lets it be narrower than its longest run.
 There is a second place that rule can be broken and it is not the diff body: the
 file HEADER. A path is one unbroken string, so the flex item holding it needs
 `min-width: 0` of its own or it sizes to the path and takes the whole
 `<details>` past the frame — the overflow arriving from the one row nobody
 watches.
 
-Measured at 220, 280, 320, 400 and 1200 pixels, light and dark, standalone and
-framed in an iframe of that width, against a real 189-file patch containing a
-468,476-character line: `document.documentElement.scrollWidth ===
-window.innerWidth` at every one of the twenty, no `<details>` wider than the
-page at any of them, and 187 of the 189 file bodies scrolling inside themselves
-at 220 pixels.
+Measured at 220, 320, 500 and 1200 pixels against a file holding a 500-character
+sentence, a 600-character run with no space in it, and a hunk header longer than
+the container: `document.documentElement.scrollWidth === window.innerWidth` at
+every one, no file body wider than its own box, and the +/- mark at the same
+offset on every row.
 
 ## The wire
 

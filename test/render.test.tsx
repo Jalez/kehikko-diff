@@ -192,7 +192,7 @@ describe('Change', () => {
     expect(counts).toContain('−1')
   })
 
-  test('a file’s diff is its own scroll container, so a long line never widens the page', () => {
+  test('a long line wraps inside its text column, beside gutters that do not give', () => {
     const { container } = render(
       <Change
         refName="gh#105"
@@ -213,12 +213,16 @@ describe('Change', () => {
     )
     const file = container.querySelector('[data-file="src/one.ts"]')
     expect(file).toBeTruthy()
-    /* The class is the contract with `index.css`, where `overflow-x: auto` and
-       `overscroll-behavior-x: contain` live. A happy-dom lays nothing out, so
-       the pixel version of this claim is measured in a browser at 220, 280,
-       320, 400 and 1200 pixels; what is asserted here is that the element those
-       rules attach to is still the one wrapping the rows. */
-    expect(file?.querySelector('.diff-scroll')).toBeTruthy()
+    /* The classes are the contract with `index.css`, where the row is told to
+       wrap. A happy-dom lays nothing out, so the pixel version of this claim is
+       measured in a browser; what is asserted here is that the text is the
+       part of the row allowed to give — `min-w-0` and `flex-1` — and that the
+       gutters beside it are not. */
+    const row = file?.querySelector('.diff-row:not(.bg-muted)')
+    const cells = Array.from(row?.children ?? [])
+    expect(cells.at(-1)?.className).toContain('min-w-0')
+    expect(cells.at(-1)?.className).toContain('flex-1')
+    for (const gutter of cells.slice(0, -1)) expect(gutter.className).toContain('shrink-0')
     expect(file?.querySelectorAll('.diff-row').length).toBeGreaterThan(0)
   })
 })
