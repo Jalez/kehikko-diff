@@ -35,7 +35,7 @@ describe('useKehikot', () => {
   test('a late reading for the epic that was closed does not replace "no epic is open"', async () => {
     answers = []
     const { result } = renderHook(() => useKehikot('diff', () => {}))
-    act(() => events.onHello!(context('a')))
+    act(() => events.onHello!(context('a'), null))
     expect(result.current.sight.at).toBe('asking')
 
     act(() => events.onContext!(context(null)))
