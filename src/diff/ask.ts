@@ -89,7 +89,7 @@ export async function askDiff(url: string, sha: string): Promise<Answer> {
   if (!asked.ok) {
     /* A refusal with no sentence of the door's own keeps this app's words rather than a status code. */
     const said = (asked.body as { error?: unknown } | null)?.error
-    const silent = asked.kind === 'refused' && asked.status !== null && asked.status < 300 && !(typeof said === 'string' && said)
+    const silent = asked.kind === 'refused' && asked.status !== null && asked.status < 300 && asked.error !== NOT_A_REPLY && !(typeof said === 'string' && said)
     return { ok: false, error: silent ? 'The diff could not be read, and nothing said why.' : asked.error, kind: asked.kind }
   }
   const reply = asked.body
