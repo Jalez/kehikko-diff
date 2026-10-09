@@ -232,6 +232,8 @@ export const MANIFEST: Manifest = manifestSchema.parse({
    * in somebody's registry that is not true of this program.
    */
   reacts: ['selection', 'tracker'],
+  /* Why this module has nothing to narrow by the parts of an epic. */
+  partless: 'Shows the pull request a person selected; narrowing would hide their own selection.',
   declares: {
     protocol: `>=${PROTOCOL} <${PROTOCOL + 1}`,
     uses: ['live:read', 'trackers:read'],
