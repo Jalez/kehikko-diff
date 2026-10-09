@@ -1,4 +1,4 @@
-import { ask, type AskFailure } from 'kehikot-module-protocol/client'
+import { NOT_A_REPLY, ask, type AskFailure } from 'kehikot-module-protocol/client'
 
 import { parseDiff, type FileDiff } from './parse.ts'
 
@@ -93,9 +93,7 @@ export async function askDiff(url: string, sha: string): Promise<Answer> {
     return { ok: false, error: silent ? 'The diff could not be read, and nothing said why.' : asked.error, kind: asked.kind }
   }
   const reply = asked.body
-  if (typeof reply !== 'object' || reply === null) {
-    return { ok: false, error: 'This app’s own server answered with something that is not a reply.', kind: 'refused' }
-  }
+  if (typeof reply !== 'object' || reply === null) return { ok: false, error: NOT_A_REPLY, kind: 'refused' }
 
   const text = typeof reply.text === 'string' ? reply.text : ''
   const patch: Patch = {
@@ -115,12 +113,4 @@ export async function askDiff(url: string, sha: string): Promise<Answer> {
     cache.delete(oldest.value)
   }
   return { ok: true, patch }
-}
-
-/**
- * Ask this app's own server whether it is there, for the cover's Try again. The answer is not
- * read: `ask` itself records how the server is standing, which is what the cover is drawn from.
- */
-export async function knock(): Promise<void> {
-  await ask('healthz')
 }
