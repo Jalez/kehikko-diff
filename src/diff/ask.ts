@@ -1,3 +1,5 @@
+import { ask, type AskFailure } from 'kehikot-module-protocol/client'
+
 import { parseDiff, type FileDiff } from './parse.ts'
 
 /**
@@ -11,6 +13,15 @@ import { parseDiff, type FileDiff } from './parse.ts'
  * real origin. Written absolute it would work on this machine and nowhere else;
  * written against a second port it would be cross-origin and would need the
  * permissive CORS header that `manifest.ts` spends four paragraphs refusing.
+ *
+ * It goes through the protocol's `ask`, which never throws, asks with
+ * `cache: 'no-store'` (the server's own cache is keyed on the head sha and is
+ * the one that should be answering; an HTTP cache over it would be a third copy
+ * keyed on a URL), and says which kind of failure a failure was: the door said
+ * no (`refused` — including "not done, and why" at 200, which is how this door
+ * hands on the CLI's own sentence), nothing answered (`down`), or this page is
+ * older than its server (`stale`). The last two are drawn by the shared cover
+ * in `app.tsx`, which is why `kind` rides along.
  *
  * ## The second cache, and why there are two
  *
@@ -51,7 +62,7 @@ export interface Patch {
   from: 'cli' | 'cache'
 }
 
-export type Answer = { ok: true; patch: Patch } | { ok: false; error: string }
+export type Answer = { ok: true; patch: Patch } | { ok: false; error: string; kind: AskFailure }
 
 const cache = new Map<string, Patch>()
 
@@ -74,39 +85,16 @@ export async function askDiff(url: string, sha: string): Promise<Answer> {
   const had = cache.get(key)
   if (had) return { ok: true, patch: had }
 
-  let response: Response
-  try {
-    response = await fetch(`api/diff?url=${encodeURIComponent(url)}&sha=${encodeURIComponent(sha)}`, {
-      /* Never cached by the browser. The server's own cache is keyed on the head
-         sha and is the one that should be answering; an HTTP cache layered over
-         it would be a third copy keyed on a URL, going stale on rules nobody
-         here chose. */
-      cache: 'no-store',
-    })
-  } catch {
-    /* A fetch to this page's own origin failing means the server that served this
-       page is not answering — it was stopped, or it crashed. Naming that is more
-       use than "network error", because the remedy is different: nothing about
-       GitHub is involved. */
-    return { ok: false, error: 'This app’s own server did not answer. It may have been stopped since this page loaded.' }
+  const asked = await ask<Record<string, unknown> | null>('api/diff', { query: { url, sha } })
+  if (!asked.ok) {
+    /* A refusal with no sentence of the door's own keeps this app's words rather than a status code. */
+    const said = (asked.body as { error?: unknown } | null)?.error
+    const silent = asked.kind === 'refused' && asked.status !== null && asked.status < 300 && !(typeof said === 'string' && said)
+    return { ok: false, error: silent ? 'The diff could not be read, and nothing said why.' : asked.error, kind: asked.kind }
   }
-
-  let body: unknown
-  try {
-    body = await response.json()
-  } catch {
-    return { ok: false, error: `This app’s own server answered ${response.status} with something that is not JSON.` }
-  }
-
-  if (typeof body !== 'object' || body === null) {
-    return { ok: false, error: 'This app’s own server answered with something that is not a reply.' }
-  }
-  const reply = body as Record<string, unknown>
-  if (reply.ok !== true) {
-    return {
-      ok: false,
-      error: typeof reply.error === 'string' && reply.error ? reply.error : 'The diff could not be read, and nothing said why.',
-    }
+  const reply = asked.body
+  if (typeof reply !== 'object' || reply === null) {
+    return { ok: false, error: 'This app’s own server answered with something that is not a reply.', kind: 'refused' }
   }
 
   const text = typeof reply.text === 'string' ? reply.text : ''
@@ -127,4 +115,12 @@ export async function askDiff(url: string, sha: string): Promise<Answer> {
     cache.delete(oldest.value)
   }
   return { ok: true, patch }
+}
+
+/**
+ * Ask this app's own server whether it is there, for the cover's Try again. The answer is not
+ * read: `ask` itself records how the server is standing, which is what the cover is drawn from.
+ */
+export async function knock(): Promise<void> {
+  await ask('healthz')
 }

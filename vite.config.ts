@@ -1,98 +1,34 @@
-import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { LEGACY_WELL_KNOWN, WELL_KNOWN, legacyManifest } from 'kehikot-module-protocol'
-import { frameAncestors, serves } from 'kehikot-module-protocol/serve'
-import { defineConfig, type Plugin } from 'vite'
+import { doors, serves } from 'kehikot-module-protocol/serve'
+import { defineConfig } from 'vite'
 
-import { MANIFEST, answer } from './doors.ts'
+import { BUILD, MANIFEST, answer } from './doors.ts'
 import { ID, PREFERRED_PORT } from './manifest.ts'
 
 /**
- * Every door this app answers on, served by the one process that serves the
- * page.
+ * Every door this app answers on is the protocol's `doors()`, served by the one process that
+ * serves the page: the manifest at both well-known paths, the page, `/healthz` and this app's
+ * `/api/diff` through `answer` in `doors.ts`. See the protocol's docs/module-plumbing.md.
  *
- * A module is ONE ORIGIN or it is nothing: the protocol refuses a manifest whose
- * `entry` points anywhere but the origin that served the manifest. So the
- * manifest, the health check, this app's `/api/diff` and the page itself cannot
- * be split across two processes on two ports, however tidy that would be — they
- * are middleware in front of the same server that serves the page. The deciding
- * lives in `doors.ts`, which holds no socket; this adapts a node request to it.
+ * A module is ONE ORIGIN or it is nothing: the protocol refuses a manifest whose `entry` points
+ * anywhere but the origin that served the manifest, so none of these can be a second process on a
+ * second port, however tidy that would be.
+ *
+ * ## The page is generated, and carries no ticket
+ *
+ * There was an `index.html` here; the document is `pageDocument` now, with no `ticket` in it,
+ * because this app takes no writes — its one door of its own is a GET. What the generated page
+ * adds is the build printed into it and the theme decided before the first paint. It is served at
+ * `/`, which is this module's `entry`, and at `/app`.
+ *
+ * `doors()` also sends `frame-ancestors`. This module declares storage, so a host frames it WITH
+ * `allow-same-origin` and it keeps its real origin, which is what makes that header mean
+ * something: an origin that answers a credentialed door should not also be silently embeddable.
+ * Whoever runs this decides who may frame it, through `KEHIKOT_ORIGINS`.
  */
-function doors(): Plugin {
-  return {
-    name: 'diff-doors',
-    configureServer(server) {
-      const index = resolve(import.meta.dirname, 'index.html')
-
-      server.middlewares.use((request, response, next) => {
-        const url = new URL(request.url ?? '/', 'http://127.0.0.1')
-        const path = url.pathname
-        const method = (request.method ?? 'GET').toUpperCase()
-
-        const send = (status: number, body: unknown) => {
-          response.statusCode = status
-          response.setHeader('content-type', 'application/json; charset=utf-8')
-          response.end(JSON.stringify(body, null, 2))
-        }
-
-        /* Spelled by the protocol package so that this app and every host cannot
-           disagree about it by a character. */
-        if (path === WELL_KNOWN) return send(200, MANIFEST)
-
-        /* The same manifest in the spelling a host from before the rename asks
-           for, so that host still finds this module. It greets in that
-           dialect and the protocol's client answers in it. */
-        if (path === LEGACY_WELL_KNOWN) return send(200, legacyManifest(MANIFEST))
-
-        /*
-         * The page, served here rather than left to Vite's own index handling,
-         * for one header.
-         *
-         * This module declares storage, so a host frames it WITH
-         * `allow-same-origin` and it keeps its real origin. Having an origin is
-         * what makes `frame-ancestors` mean something: without this line any
-         * page anywhere could frame this one, and while there is nothing here to
-         * click that would hurt anybody, an origin that answers a credentialed
-         * door should not also be silently embeddable. It is deliberately not a
-         * list of one — whoever runs this decides, through `KEHIKOT_ORIGIN` (or the older `ROADMAP_ORIGIN`), via `frameAncestors()`, and
-         * the default is the address the host in this workspace actually serves
-         * on. `'self'` is in it so that opening this page directly still works.
-         *
-         * The document still goes through `transformIndexHtml`, so Vite's client
-         * and the module graph are injected exactly as they would be for an
-         * ordinary index — this claims the response, not the build.
-         */
-        if (path === '/') {
-          void server
-            .transformIndexHtml(request.url ?? '/', readFileSync(index, 'utf8'), request.originalUrl)
-            .then((html) => {
-              response.statusCode = 200
-              response.setHeader('content-type', 'text/html; charset=utf-8')
-              response.setHeader(
-                'content-security-policy',
-                frameAncestors(),
-              )
-              response.end(html)
-            })
-            .catch(next)
-          return
-        }
-
-        if (path !== '/healthz' && !path.startsWith('/api/')) return next()
-
-        void answer(method, path, url.searchParams)
-          .then((reply) => {
-            if (!reply) return next()
-            send(reply.status, reply.body)
-          })
-          .catch(next)
-      })
-    },
-  }
-}
 
 /**
  * The build, and the one line in it that decides who may read this port.
@@ -173,8 +109,12 @@ function doors(): Plugin {
  */
 export default defineConfig({
   base: './',
-  plugins: [serves({ id: ID, prefer: PREFERRED_PORT }), doors(), react(), tailwindcss()],
+  plugins: [
+    serves({ id: ID, prefer: PREFERRED_PORT }),
+    doors({ manifest: MANIFEST, answer, build: BUILD, page: { title: 'Diff' } }),
+    react(),
+    tailwindcss(),
+  ],
   resolve: { alias: { '@': resolve(import.meta.dirname, 'src') } },
   server: { cors: false },
-  build: { outDir: 'dist', emptyOutDir: true },
 })

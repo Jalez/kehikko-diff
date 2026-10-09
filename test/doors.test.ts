@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
-import { answer } from '../doors.ts'
+import { BUILD, answer } from '../doors.ts'
+import { through } from './through-doors.ts'
 import { ID, MANIFEST } from '../manifest.ts'
 
 const q = (search: string) => new URLSearchParams(search)
@@ -70,5 +71,32 @@ describe('manifest', () => {
 
   test('no prompt is offered, because nothing a person could write would change a line of a patch', () => {
     expect(MANIFEST.declares.prompt).toBe(false)
+  })
+
+  /*
+   * Through the protocol's doors, as `vite.config.ts` mounts them. This app takes no writes, so
+   * the page it serves carries the build and NO ticket, and anything but a GET is refused.
+   */
+  test('through the doors: the page at / carries the build and no ticket, and only a host may frame it', async () => {
+    const DOORS = { manifest: MANIFEST, answer, build: BUILD, page: { title: 'Diff' } }
+    for (const path of ['/', '/app']) {
+      const page = await through(DOORS, 'GET', path)
+      expect(page.status).toBe(200)
+      expect(page.text).toContain('<title>Diff</title>')
+      expect(page.text).toContain('<script id="build" type="application/json">')
+      expect(page.text).not.toContain('id="ticket"')
+      expect(page.headers['cache-control']).toBe('no-store')
+      expect(page.headers['content-security-policy']).toContain('frame-ancestors')
+    }
+    const health = await through(DOORS, 'GET', '/healthz')
+    expect(health.json()).toMatchObject({ ok: true, id: ID, build: { version: BUILD.version } })
+    expect(health.headers['x-module-build']).toBeTruthy()
+
+    const refused = await through(DOORS, 'GET', '/api/diff?url=https://example.com/x&sha=abc')
+    expect(refused.status).toBe(200)
+    expect(refused.json().ok).toBe(false)
+    const write = await through(DOORS, 'POST', '/api/diff', { body: { url: 'x' }, headers: { 'x-module-ticket': 'anything' } })
+    expect(write.status).toBe(405)
+    expect((await through(DOORS, 'GET', '/src/main.tsx')).passed).toBe(true)
   })
 })
