@@ -1,11 +1,12 @@
 import { MousePointerClick, RefreshCw, ShieldAlert, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { Cover, useServerStanding, type CoverState } from 'kehikot-module-protocol/client/react'
+import { probeServer } from 'kehikot-module-protocol/client'
+import { Cover, coverFor, useServerStanding, type CoverState } from 'kehikot-module-protocol/client/react'
 
 import { ID } from '../manifest.ts'
 
-import { askDiff, knock } from '@/diff/ask.ts'
+import { askDiff } from '@/diff/ask.ts'
 import { headFor, type Head } from '@/live/heads.ts'
 import { generatedAt, index, type Found } from '@/live/lookup.ts'
 import { Change, type Ask } from '@/view/change.tsx'
@@ -217,11 +218,12 @@ export function App() {
   })
 
   /**
-   * The cover's Try again: ask the server whether it is there, then ask again for every patch it
-   * never answered about. A patch that is on screen is not asked for twice.
+   * The cover's Try again: ask the server whether it is there (`probeServer`, which records how it
+   * is standing — what the cover is drawn from), then ask again for every patch it never answered
+   * about. A patch that is on screen is not asked for twice. `healthz` is relative, like `api/diff`.
    */
   const retry = useCallback(() => {
-    void knock().then(() => {
+    void probeServer('healthz').then(() => {
       const again = [...unanswered.current.values()]
       unanswered.current.clear()
       for (const found of again) ask(found)
@@ -231,8 +233,8 @@ export function App() {
   /*
    * Every not-ready moment is the protocol's one cover.
    *
-   * Not `coverFor`: that helper asks for a project before it will say "unhosted" or "no epic", and
-   * this app has no use for a project folder — it needs a host, an epic, and a selection.
+   * `coverFor` with `{ host: true }`: this app has no use for a project folder — it needs a host,
+   * an epic, and a selection — and the epic is not the whole page's to cover (below).
    *
    * `whole` covers stand in for the page: waiting for the greeting, nothing framing it, and this
    * app's own server not answering or having restarted under it. Under the last two the changes
@@ -243,16 +245,8 @@ export function App() {
    * No cover is given a height: this page reports its content's height to the host.
    */
   const server = useServerStanding()
-  const whole: CoverState | null =
-    server === 'stale'
-      ? 'stale'
-      : sight.at === 'listening'
-        ? 'waiting'
-        : sight.at === 'unhosted'
-          ? 'unhosted'
-          : server === 'down'
-            ? 'down'
-            : null
+  const where = sight.at === 'listening' || sight.at === 'unhosted' ? sight.at : 'hosted'
+  const whole: CoverState | null = coverFor({ where, projectPath: null, server }, { host: true })
 
   const epic = sight.at === 'read' || sight.at === 'asking' || sight.at === 'unread' || sight.at === 'refused' ? sight.epic : null
   const taken = sight.at === 'read' ? generatedAt(sight.live) : null
