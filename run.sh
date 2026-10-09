@@ -29,7 +29,7 @@
 #   - `exec`, and the foreground. A script that forks and returns leaves whoever
 #     started it holding a pid that stops nothing, and Stop is only ever offered
 #     for what a host started.
-#   - `cd` to this script's own directory, so `index.html` and the manifest are
+#   - `cd` to this script's own directory, so `vite.config.ts` and the manifest are
 #     found however the script was invoked.
 #
 # It does NOT register a module that had none. Registration is a deliberate act

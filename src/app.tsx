@@ -1,18 +1,11 @@
-import {
-  Antenna,
-  FolderOpen,
-  MousePointerClick,
-  RefreshCw,
-  Search,
-  ShieldAlert,
-  Unplug,
-  type LucideIcon,
-} from 'lucide-react'
+import { MousePointerClick, RefreshCw, ShieldAlert, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import { Cover, useServerStanding, type CoverState } from 'kehikot-module-protocol/client/react'
 
 import { ID } from '../manifest.ts'
 
-import { askDiff } from '@/diff/ask.ts'
+import { askDiff, knock } from '@/diff/ask.ts'
 import { headFor, type Head } from '@/live/heads.ts'
 import { generatedAt, index, type Found } from '@/live/lookup.ts'
 import { Change, type Ask } from '@/view/change.tsx'
@@ -171,6 +164,9 @@ export function App() {
     [refs, reading, heads],
   )
 
+  /* The asks this app's own server never answered, by the same key as `got`. */
+  const unanswered = useRef(new Map<string, Found>())
+
   const ask = useCallback((found: Found) => {
     const at = `${found.ref}|${found.sha}`
     if (started.current.has(at)) return
@@ -178,6 +174,8 @@ export function App() {
     setGot((was) => ({ ...was, [at]: { at: 'asking' } }))
     void askDiff(found.url, found.sha).then((answer) => {
       if (!answer.ok) started.current.delete(at)
+      /* Not refused — nothing answered. Remembered, so the cover's Try again can ask it again. */
+      if (!answer.ok && answer.kind !== 'refused') unanswered.current.set(at, found)
       setGot((was) => ({
         ...was,
         [at]: answer.ok ? { at: 'ok', patch: answer.patch } : { at: 'error', error: answer.error },
@@ -218,6 +216,44 @@ export function App() {
     return () => watch.disconnect()
   })
 
+  /**
+   * The cover's Try again: ask the server whether it is there, then ask again for every patch it
+   * never answered about. A patch that is on screen is not asked for twice.
+   */
+  const retry = useCallback(() => {
+    void knock().then(() => {
+      const again = [...unanswered.current.values()]
+      unanswered.current.clear()
+      for (const found of again) ask(found)
+    })
+  }, [ask])
+
+  /*
+   * Every not-ready moment is the protocol's one cover.
+   *
+   * Not `coverFor`: that helper asks for a project before it will say "unhosted" or "no epic", and
+   * this app has no use for a project folder — it needs a host, an epic, and a selection.
+   *
+   * `whole` covers stand in for the page: waiting for the greeting, nothing framing it, and this
+   * app's own server not answering or having restarted under it. Under the last two the changes
+   * stay MOUNTED and hidden, so the files somebody had opened are as they left them when it is back.
+   * `no-epic` and `loading` only ever stand where the one-line `Sightline` stood, when nothing is
+   * selected.
+   *
+   * No cover is given a height: this page reports its content's height to the host.
+   */
+  const server = useServerStanding()
+  const whole: CoverState | null =
+    server === 'stale'
+      ? 'stale'
+      : sight.at === 'listening'
+        ? 'waiting'
+        : sight.at === 'unhosted'
+          ? 'unhosted'
+          : server === 'down'
+            ? 'down'
+            : null
+
   const epic = sight.at === 'read' || sight.at === 'asking' || sight.at === 'unread' || sight.at === 'refused' ? sight.epic : null
   const taken = sight.at === 'read' ? generatedAt(sight.live) : null
 
@@ -236,6 +272,11 @@ export function App() {
         </header>
       )}
 
+      {whole ? (
+        <Cover state={whole} name="Diff" onRetry={retry} detail={whole === 'unhosted' ? NO_LIST : null} />
+      ) : null}
+
+      <div hidden={whole !== null} className={whole ? undefined : 'contents'}>
       {entries.length ? (
         <>
           <p className="text-[0.7rem] leading-4 text-muted-foreground">
@@ -254,37 +295,46 @@ export function App() {
             />
           ))}
         </>
-      ) : (
+      ) : sight.at === 'no-epic' ? (
+        <Cover state="no-epic" />
+      ) : sight.at === 'asking' ? (
+        <Cover state="loading">{`Asking Kehikot what it last read about ${sight.epic}.`}</Cover>
+      ) : sight.at === 'listening' || sight.at === 'unhosted' ? null : (
         <Sightline sight={sight} />
       )}
+      </div>
     </div>
   )
 }
 
+/** The second line under the unhosted cover: why there is nothing to fall back on. */
+export const NO_LIST =
+  'This app has no list of its own to fall back on: what it shows is decided entirely by what a canvas has selected.'
+
 /**
- * What this page can currently see, in words, when nothing is selected.
+ * What this page can currently see, in words, when nothing is selected and the host has answered.
  *
- * Seven sentences for seven states, and they are seven because they send a
- * reader to seven different places. "Nothing is framing this page" and "the host
- * refused the question" and "the host has no reading for this epic" are not
- * shades of one disappointment, and a single "no diff" over all of them would be
- * this app saying nothing at the exact moment it has something specific to say.
+ * Three sentences for three states, and they are three because they send a reader to three
+ * different places: "the host refused the question", "the host has no reading for this epic" and
+ * "nothing is picked" are not shades of one disappointment, and a single "no diff" over all of
+ * them would be this app saying nothing at the exact moment it has something specific to say.
  *
- * None of them is a spinner. `listening` says what it is waiting for and lasts
- * under a second.
+ * The four moments BEFORE those — waiting for a greeting, nothing framing the page, no epic open,
+ * the question still out — are the protocol's shared `Cover`, drawn in `App`, in the words every
+ * module says them with.
  *
- * The last one — a reading in hand and nothing picked — is the state this container
+ * The last one here — a reading in hand and nothing picked — is the state this container
  * spends most of its life in, and it is the one that has to explain the
  * mechanism, because a person looking at an empty container has no way to guess that
  * the thing that fills it is a click somewhere else on the canvas.
  */
-function Sightline({ sight }: { sight: Sight }) {
+function Sightline({ sight }: { sight: Extract<Sight, { at: 'refused' | 'unread' | 'read' }> }) {
   /*
    * A heading, a sentence and a mark, per state.
    *
    * The heading is new and the sentences are the ones that were already here,
    * unchanged. The reason for adding a heading rather than styling the
-   * paragraph is that these seven states are read at a glance and then acted
+   * paragraph is that these states are read at a glance and then acted
    * on somewhere else — in another container, or in a terminal — and four words a
    * reader can take in without reading a paragraph is what decides whether
    * they act on the right one. The paragraph is still the whole answer; the
@@ -295,42 +345,23 @@ function Sightline({ sight }: { sight: Sight }) {
    * every one of them is followed by the sentence that actually says it.
    */
   const [Mark, heading, said]: [LucideIcon, string, string] =
-    sight.at === 'listening'
-      ? [Antenna, 'Listening', 'Waiting to hear whether anything is framing this page.']
-      : sight.at === 'unhosted'
+    sight.at === 'refused'
+      ? [
+          ShieldAlert,
+          'Kehikot said no',
+          `Kehikot was asked what it last read about ${sight.epic} and said no: ${sight.refusal.error} Without that reading this app cannot tell a pull request from an issue, or find out where either of them lives.`,
+        ]
+      : sight.at === 'unread'
         ? [
-            Unplug,
-            'Nothing is framing this page',
-            'Nothing is framing this page, so nothing has said which change to show. This app has no list of its own to fall back on: what it shows is decided entirely by what a canvas has selected.',
+            RefreshCw,
+            'Nothing has been read yet',
+            `Kehikot has no reading for ${sight.epic} — nothing has been refreshed from a tracker for it. Refresh the epic and a selected change will have an address and a head commit to fetch by.`,
           ]
-        : sight.at === 'no-epic'
-          ? [FolderOpen, 'No epic is open', 'Kehikot is here and no epic is open, so there is nothing to select a change out of.']
-          : sight.at === 'asking'
-            ? [Search, 'Asking Kehikot', `Asking Kehikot what it last read about ${sight.epic}.`]
-            : sight.at === 'refused'
-              ? [
-                  /* The state the brief names beside "nothing selected", and it
-                     is deliberately not drawn as a failure of this app. A host
-                     may refuse any call at any time whatever a manifest
-                     declares — the reasoning is in `manifest.ts` — so a refusal
-                     is an ordinary answer, and the host's own words are quoted
-                     rather than paraphrased because they are the only thing
-                     that says WHY. */
-                  ShieldAlert,
-                  'Kehikot said no',
-                  `Kehikot was asked what it last read about ${sight.epic} and said no: ${sight.refusal.error} Without that reading this app cannot tell a pull request from an issue, or find out where either of them lives.`,
-                ]
-              : sight.at === 'unread'
-                ? [
-                    RefreshCw,
-                    'Nothing has been read yet',
-                    `Kehikot has no reading for ${sight.epic} — nothing has been refreshed from a tracker for it. Refresh the epic and a selected change will have an address and a head commit to fetch by.`,
-                  ]
-                : [
-                    MousePointerClick,
-                    'Nothing is selected',
-                    'Nothing is selected on the canvas. Pick a merge request or a pull request in another container and its diff appears here.',
-                  ]
+        : [
+            MousePointerClick,
+            'Nothing is selected',
+            'Nothing is selected on the canvas. Pick a merge request or a pull request in another container and its diff appears here.',
+          ]
 
   return (
     <div className="flex min-w-0 items-start gap-2 rounded-md border bg-card px-2 py-2">

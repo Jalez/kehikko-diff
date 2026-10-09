@@ -1,58 +1,33 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
-import {
-  HostRefused,
-  connect,
-  type Connection,
-  type HostEvents,
-  type Refusal,
-} from 'kehikot-module-protocol/client'
-import { LIMITS } from 'kehikot-module-protocol'
+import { HostRefused, type HostEvents, type Refusal } from 'kehikot-module-protocol/client'
+import { useHost } from 'kehikot-module-protocol/client/react'
+import { LIMITS, type ModuleContext } from 'kehikot-module-protocol'
 
 import { readHeads, type Head, type Heads } from '@/live/heads.ts'
 
 /**
- * The bridge, as one React value.
+ * The bridge, as one React value: the protocol's `useHost`, and this module's own reading of what
+ * a host knows about the open epic on top of it.
  *
- * `kehikot-module-protocol/client` is the wire and knows no React; this is the
- * only file that turns messages into state, and it is deliberately the only
- * one. Two places driving "what can this page see" would eventually disagree,
- * and this module's whole honesty rests on telling one absence from another — a
- * page nothing is framing from a host that refused the question from an epic
- * nothing has ever read.
+ * `useHost` is the listener — the connection stored before it listens, the greeting's grace
+ * (`listening`, then `unhosted` or `hosted`), the theme put on `<html>`, the page that reloads
+ * itself when it is older than its server. None of that is typed out here any more.
  *
- * ## What used to be underneath this
+ * ## What stays here, and why
  *
- * `wire/host.ts` and `wire/mailbox.ts` — 424 lines, near-identical to the copy
- * in seven sibling modules. They are one import now, and two things this page
- * used to do by hand went with them.
+ * This module's whole honesty rests on telling one absence from another — a page nothing is
+ * framing, from a host that refused the question, from an epic nothing has ever read. `useHost`
+ * knows the first; the rest are answers to two things this page ASKS the host, and the state
+ * machine around those questions is this file:
  *
- * The first is the twenty-line box below `connect` that caught an arrival which
- * came too early and replayed it once the assignment was done. It worked, and
- * it was the wrong shape: it fixed this module's copy of a hazard every module
- * had. The client splits `connect` from `listen()` so the ordering is three
- * plain lines in the order they happen.
+ * - `live.get`, once per epic (not once per context — see `standingOn`), which is `sight`;
+ * - `tracker.get`, for the head commit of each selected change, which is `heads`.
  *
- * The second is the field-by-field rebuild of the context. What stood in
- * `host.ts` named `epic`, `project`, `theme`, `selection`, `prompt`, `pinned`
- * and `kehikko` — and therefore dropped `projectPath` on every `kehikot.context`
- * this page received, silently. The client spreads the message instead, so it
- * arrives now. Nothing here reads it yet; what changed is that it reaches the
- * code that might.
- *
- * ## The grace, and why there is one
- *
- * A page cannot know at load whether it is framed. It has to wait to find out,
- * because the greeting arrives when the host is ready rather than when we are,
- * and a page that concluded "nobody is there" in the first frame would say so
- * and then be greeted a moment later — the reader would see the standalone
- * paragraph flash past and be replaced, which teaches them that paragraph is
- * noise. So there is a `listening` state with its own words, it lasts under a
- * second, and only then does the page say the harder thing.
- *
- * It is not a spinner. It says what it is waiting for.
+ * Both are driven from `onHello` and `onContext` rather than derived in an effect, because the
+ * difference between a greeting and a context is load-bearing here (a greeting always re-asks) and
+ * an effect over the context cannot see it.
  */
-const GREETING_GRACE_MS = 700
 
 /**
  * What this page can currently see of a host's reading.
@@ -83,7 +58,7 @@ export interface Roadmap {
    * arriving, in the same family as which epic is open, and the only place it
    * comes from is `kehikot.context`.
    */
-  selection: string[]
+  selection: readonly string[]
   /**
    * The head commit of each change this page asked the tracker about, or that
    * it is still being asked, or why there is none. See `live/heads.ts`.
@@ -106,28 +81,16 @@ export interface Roadmap {
  * Handed in rather than handled here, because the answer depends on what is on
  * screen, and that is the view's business. The contract is the protocol's:
  * `answer` must be called, and calling it late is the same as not calling it —
- * see the backstop in `host.ts`.
+ * see `GOTO_BACKSTOP_MS` in the protocol's client.
  */
 export type GotoHandler = NonNullable<HostEvents['onGoto']>
 
 export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
-  const [sight, setSight] = useState<Sight>({ at: 'listening' })
-  const [selection, setSelection] = useState<string[]>([])
+  /* What the host's reading of the open epic is, once anything is framing this page. Before that,
+     `sight` below is `useHost`'s `where`. */
+  const [reading, setReading] = useState<Exclude<Sight, { at: 'listening' } | { at: 'unhosted' }>>({ at: 'no-epic' })
   const [heads, setHeads] = useState<Heads>({})
-  const [trackerAt, setTrackerAt] = useState<string | null>(null)
-  const host = useRef<Connection | null>(null)
 
-  /**
-   * The handler, held in a ref and read at the moment a `goto` arrives.
-   *
-   * The view rebuilds this function whenever the rows change, and connecting to
-   * the window again on every render would mean a torn-down listener during the
-   * one millisecond a host chose to greet in. So the listener is established once
-   * and always calls the newest handler — which is also the only one that knows
-   * what is currently on screen.
-   */
-  const goto = useRef(onGoto)
-  goto.current = onGoto
 
   /**
    * Which question is the current one.
@@ -179,13 +142,16 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
    */
   const standingOn = useRef<string | null | undefined>(undefined)
 
+  /* Assigned below; read through a ref so `look` and `askHeads` can be stable and still reach it. */
+  const request = useRef<ReturnType<typeof useHost>['request'] | null>(null)
+
   const look = useCallback((epic: string) => {
     const mine = (asking.current += 1)
     standingOn.current = epic
-    setSight({ at: 'asking', epic })
-    const current = host.current
-    if (!current) return
-    void current
+    setReading({ at: 'asking', epic })
+    const ask = request.current
+    if (!ask) return
+    void ask(
       /**
        * Both spellings of the same name.
        *
@@ -199,18 +165,18 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
        * one name here spelled twice. The second key comes out when no host in the
        * field reads it.
        */
-      .request('live.get', { epic, slug: epic })
+      'live.get', { epic, slug: epic })
       .then((data) => {
         if (asking.current !== mine) return
         /* `null` is a host's own word for "there is no reading for this epic". It
            is not an error and it is not an empty reading, and the six-way `Sight`
            exists so that it does not become either. */
-        if (data === null || data === undefined) setSight({ at: 'unread', epic })
-        else setSight({ at: 'read', epic, live: data })
+        if (data === null || data === undefined) setReading({ at: 'unread', epic })
+        else setReading({ at: 'read', epic, live: data })
       })
       .catch((error: unknown) => {
         if (asking.current !== mine) return
-        setSight({
+        setReading({
           at: 'refused',
           epic,
           refusal:
@@ -239,8 +205,8 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
    * left must not file its heads under the one that is open now.
    */
   const askHeads = useCallback((refs: readonly string[]) => {
-    const current = host.current
-    if (!current || !refs.length) return
+    const ask = request.current
+    if (!ask || !refs.length) return
     const asked = refs.slice(0, LIMITS.TRACKER_ASK)
     const mine = asking.current
     const fill = (made: (was: Heads) => Record<string, Head>) =>
@@ -250,8 +216,7 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
     fill((was) =>
       Object.fromEntries(asked.filter((ref) => !Object.hasOwn(was, ref)).map((ref) => [ref, { at: 'asking', since: undefined } as Head])),
     )
-    void current
-      .request('tracker.get', { refs: asked, detail: 'detail' })
+    void ask('tracker.get', { refs: asked, detail: 'detail' })
       .then((data) => fill((was) => readHeads(asked, data, was)))
       .catch((error: unknown) => {
         const why =
@@ -261,121 +226,59 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
       })
   }, [])
 
-  useEffect(() => {
-    /**
-     * What the greeting and every later context both do.
-     *
-     * The theme is applied here rather than in a component, because it is a fact
-     * about the document rather than about any part of it: the host says light or
-     * dark and the root element carries it. `light` is set explicitly as well as
-     * `dark`, so that a host asking for light over a machine set to dark actually
-     * gets it — see the media query in `index.css`.
-     */
-    const arrived = (
-      context: { epic: string | null; theme: 'light' | 'dark'; selection: string[]; tracker?: { at: string | null } },
-      greeting: boolean,
-    ) => {
-      /* A greeting always re-asks, because a greeting means the conversation is
-         new: the host greets on every frame LOAD, so one arriving is a page that
-         has just come into existence, or a frame that reloaded and has forgotten
-         everything it knew. Answering that with "the epic has not changed, so
-         there is nothing to do" would leave a page with no reading and no
-         question outstanding, forever.
+  /**
+   * What the greeting and every later context both do — about the READING. The theme, the
+   * selection and the tracker's clock are `useHost`'s, read straight off the context it holds.
+   */
+  const arrived = (context: ModuleContext, greeting: boolean) => {
+    /* A greeting always re-asks, because a greeting means the conversation is
+       new: the host greets on every frame LOAD, so one arriving is a page that
+       has just come into existence, or a frame that reloaded and has forgotten
+       everything it knew. Answering that with "the epic has not changed, so
+       there is nothing to do" would leave a page with no reading and no
+       question outstanding, forever.
 
-         `StrictMode` is the case that proves it in the smallest possible space.
-         The effect below is torn down and set up again on purpose in development;
-         the teardown refuses every question still in flight, and the setup
-         replays the greeting out of the mailbox. If the replayed greeting were
-         deduplicated against the epic the refused question had been about, the
-         page would settle on the refusal and stay there — in development only,
-         which is the worst place for a bug to live. */
-      if (greeting) standingOn.current = undefined
+       `StrictMode` is the case that proves it in the smallest possible space.
+       The listening effect in `useHost` is torn down and set up again on purpose in development;
+       the teardown refuses every question still in flight, and the setup
+       replays the greeting out of the mailbox. If the replayed greeting were
+       deduplicated against the epic the refused question had been about, the
+       page would settle on the refusal and stay there — in development only,
+       which is the worst place for a bug to live. */
+    if (greeting) standingOn.current = undefined
 
-      const root = document.documentElement
-      root.classList.toggle('dark', context.theme === 'dark')
-      root.classList.toggle('light', context.theme === 'light')
+    const moved = context.epic !== standingOn.current
+    standingOn.current = context.epic
+    if (!moved) return
 
-      /**
-       * The selection is taken from every context, unconditionally, before
-       * anything decides whether the epic moved.
-       *
-       * That order is the whole of "this page follows rather than showing a
-       * stale patch". The host clears the selection as part of moving to another
-       * epic, and it says so in the same message that names the new epic — so a
-       * page that read the selection only on the branch where the epic stayed
-       * put would go on drawing the previous epic's diff under the new epic's
-       * name, which is the most confident kind of wrong this container could be.
-       * Reading it first means the clear lands whether the epic moved or not,
-       * and the refetch below is a separate question.
-       */
-      setSelection(context.selection)
-      /* Absent from a host older than the shared tracker reading, and then it
-         never moves — which is right: such a host has no detail to wait for. */
-      setTrackerAt(context.tracker?.at ?? null)
+    /* The heads were asked for the epic that was open. A ref spelled the same
+       in the next one is the next one's to ask about. */
+    setHeads({})
 
-      const moved = context.epic !== standingOn.current
-      standingOn.current = context.epic
-      if (!moved) return
-
-      /* The heads were asked for the epic that was open. A ref spelled the same
-         in the next one is the next one's to ask about. */
-      setHeads({})
-
-      if (context.epic) look(context.epic)
-      else {
-        /* Moving to no epic is a move like any other: whatever `live.get` is
-           still out was asked about the epic that was just closed. */
-        asking.current += 1
-        setSight({ at: 'no-epic' })
-      }
+    if (context.epic) look(context.epic)
+    else {
+      /* Moving to no epic is a move like any other: whatever `live.get` is
+         still out was asked about the epic that was just closed. */
+      asking.current += 1
+      setReading({ at: 'no-epic' })
     }
+  }
 
-    /**
-     * The connection is stored BEFORE it is told to listen, and the order is
-     * the whole of a bug that made a sibling module hang forever.
-     *
-     * `listen()` subscribes to the mailbox, and the mailbox replays what has
-     * already arrived SYNCHRONOUSLY, inside that call. The greeting almost
-     * always arrives before React mounts — that is the entire reason the mailbox
-     * exists — so `onHello` fires on that line. `look` reads `host.current`, and
-     * if the assignment had not happened it would find null, return early, and
-     * leave the page reading "Asking about …". It starts no timer either, so
-     * nothing ever times out: not a slow answer, not a refusal, just a sentence
-     * that never changes.
-     *
-     * Worse, it works often enough to look fine. When the host happens to greet
-     * after this effect returns — a slow module, a reload, a busy machine — the
-     * assignment has already happened and everything behaves. A race whose good
-     * outcome is the common one is the kind that ships.
-     *
-     * What stood here was twenty lines that caught the too-early arrival in a
-     * box and replayed it once the assignment was done. It worked, and it was
-     * the wrong shape: it fixed this module's copy of a hazard every module had.
-     * `connect` and `listen` are two calls now, so the ordering is three plain
-     * lines that read in the order they happen.
-     */
-    const live = connect(id, {
-      onHello: (context) => arrived(context, true),
-      onContext: (context) => arrived(context, false),
-      onGoto: (message, answer) => goto.current(message, answer),
-    })
-    host.current = live
-    live.listen()
+  const host = useHost(id, {
+    onGoto,
+    onHello: (context) => arrived(context, true),
+    onContext: (context) => arrived(context, false),
+  })
+  request.current = host.request
 
-    const grace = setTimeout(() => {
-      setSight((was) => (was.at === 'listening' ? { at: 'unhosted' } : was))
-    }, GREETING_GRACE_MS)
-
-    return () => {
-      clearTimeout(grace)
-      live.stop()
-      /* Cleared only if it is still ours: under StrictMode the second mount has
-         already assigned its own connection by the time some cleanups run. */
-      if (host.current === live) host.current = null
-    }
-  }, [id, look])
-
-  const resize = useCallback((height: number) => host.current?.resize(height), [])
+  const sight = useMemo<Sight>(
+    () => (host.where === 'hosted' ? reading : { at: host.where }),
+    [host.where, reading],
+  )
+  /* Absent from a host older than the shared tracker reading, and then it never moves — which is
+     right: such a host has no detail to wait for. */
+  const trackerAt = host.context?.tracker?.at ?? null
+  const { selection, resize } = host
 
   return useMemo(
     () => ({ sight, selection, heads, trackerAt, askHeads, resize }),

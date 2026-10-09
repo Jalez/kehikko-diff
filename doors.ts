@@ -1,3 +1,5 @@
+import { establishBuild, type Reply } from 'kehikot-module-protocol/serve'
+
 import { ID, MANIFEST, VERSION } from './manifest.ts'
 import { locate } from './patch/locate.ts'
 import { held, patchFor } from './patch/fetch.ts'
@@ -63,10 +65,14 @@ const MAX_URL = 500
  */
 const MAX_SHA = 80
 
-export interface Reply {
-  status: number
-  body: unknown
-}
+export type { Reply }
+
+/**
+ * What this process is built from and when it started; the protocol's `doors()` says it wherever a
+ * build is said — the manifest, `/healthz`, the page, and a header on every answer, which is how an
+ * open page notices that the server answering it is no longer the one that served it.
+ */
+export const BUILD = establishBuild({ version: VERSION, dir: import.meta.dirname })
 
 const str = (value: string | null, max: number): string => (value ?? '').trim().slice(0, max)
 
