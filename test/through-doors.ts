@@ -22,7 +22,7 @@ export async function through(
   { body, headers = {} }: { body?: unknown; headers?: Record<string, string> } = {},
 ): Promise<Sent> {
   const sent = body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body)
-  const response = await doorsFetch(options)(new Request(`http://127.0.0.1${url}`, { method, headers, body: sent }))
+  const response = await doorsFetch(options)(new Request(`http://127.0.0.1${url}`, { method, headers: sent === undefined ? headers : { 'content-type': 'application/json', ...headers }, body: sent }))
   const text = response ? await response.text() : ''
   return {
     status: response?.status ?? 0,
