@@ -211,6 +211,28 @@ describe('the not-ready moments are the shared cover', () => {
     expect(document.body.textContent).toContain('Nothing is selected')
   })
 
+  test('a host with no reading for the epic is a sentence under "nothing selected", not a banner over the page', async () => {
+    render(<App />)
+    act(() => events.onHello(context('a'), null))
+    await act(async () =>
+      post({ type: MESSAGE.RESPONSE, id: requests()[0]?.id, ok: false, reason: 'failed', error: 'Nothing has been read from the trackers for that epic.' }),
+    )
+    expect(document.body.textContent).not.toContain('Kehikot said no')
+    expect(document.body.textContent).toContain('Nothing is selected')
+    expect(document.body.textContent).toContain('Kehikot has no reading of a yet')
+  })
+
+  test('a selected change with no reading says so, in place of the content that needs it', async () => {
+    render(<App />)
+    act(() => events.onHello({ ...context('a'), selection: ['gh#9'] }, null))
+    await act(async () =>
+      post({ type: MESSAGE.RESPONSE, id: requests()[0]?.id, ok: false, reason: 'failed', error: 'Nothing has been read from the trackers for that epic.' }),
+    )
+    expect(document.body.textContent).toContain('gh#9')
+    expect(document.body.textContent).toContain('Kehikot has no reading of a yet, so gh#9 cannot be looked up')
+    expect(document.body.textContent).not.toContain('said no')
+  })
+
   test('a read carries no ticket, and a refusal — at 200 or not — is the door’s own sentence', async () => {
     const calls: { url: string; init: RequestInit | undefined }[] = []
     let reply = () => new Response(JSON.stringify({ ok: false, error: 'gh: To get started with GitHub CLI, please run: gh auth login' }), { status: 200 })

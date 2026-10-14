@@ -1,4 +1,4 @@
-import { MousePointerClick, RefreshCw, ShieldAlert, type LucideIcon } from 'lucide-react'
+import { MousePointerClick, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { probeServer } from 'kehikot-module-protocol/client'
@@ -286,6 +286,7 @@ export function App() {
               ask={entry.found ? got[`${entry.found.ref}|${entry.found.sha}`] : undefined}
               onAsk={() => entry.found && ask(entry.found)}
               epic={epic}
+              unread={sight.at === 'refused' || sight.at === 'unread'}
             />
           ))}
         </>
@@ -338,31 +339,31 @@ function Sightline({ sight }: { sight: Extract<Sight, { at: 'refused' | 'unread'
    * of thing as each other, and it says nothing a screen reader needs, because
    * every one of them is followed by the sentence that actually says it.
    */
-  const [Mark, heading, said]: [LucideIcon, string, string] =
-    sight.at === 'refused'
-      ? [
-          ShieldAlert,
-          'Kehikot said no',
-          `Kehikot was asked what it last read about ${sight.epic} and said no: ${sight.refusal.error} Without that reading this app cannot tell a pull request from an issue, or find out where either of them lives.`,
-        ]
-      : sight.at === 'unread'
-        ? [
-            RefreshCw,
-            'Nothing has been read yet',
-            `Kehikot has no reading for ${sight.epic} — nothing has been refreshed from a tracker for it. Refresh the epic and a selected change will have an address and a head commit to fetch by.`,
-          ]
-        : [
-            MousePointerClick,
-            'Nothing is selected',
-            'Nothing is selected on the canvas. Pick a merge request or a pull request in another container and its diff appears here.',
-          ]
+  /*
+   * No reading is a SENTENCE here, not a state of the page. This is only ever drawn with nothing
+   * selected, so what is true of the page is "nothing is selected" — and that is what it says. The
+   * missing reading is one more line under it, because it is what a selected change will run into;
+   * a banner headed "Kehikot said no" over the whole container made an expected state read as a
+   * fault. The host's own words ride on the title for whoever is debugging.
+   */
+  const unread = sight.at === 'refused' || sight.at === 'unread'
+  const [Mark, heading, said]: [LucideIcon, string, string] = [
+    MousePointerClick,
+    'Nothing is selected',
+    unread
+      ? `Nothing is selected on the canvas. Kehikot has no reading of ${sight.epic} yet, so a change picked now cannot be looked up until the trackers have been read for it.`
+      : 'Nothing is selected on the canvas. Pick a merge request or a pull request in another container and its diff appears here.',
+  ]
+  const why = sight.at === 'refused' ? sight.refusal.error : undefined
 
   return (
     <div className="flex min-w-0 items-start gap-2 rounded-md border bg-card px-2 py-2">
       <Mark aria-hidden="true" className="mt-px size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0">
         <p className="text-[0.75rem] leading-4 font-semibold">{heading}</p>
-        <p className="mt-1 text-[0.7rem] leading-4 text-muted-foreground">{said}</p>
+        <p className="mt-1 text-[0.7rem] leading-4 text-muted-foreground" title={why}>
+          {said}
+        </p>
       </div>
     </div>
   )
