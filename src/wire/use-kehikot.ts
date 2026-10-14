@@ -5,6 +5,7 @@ import { useHost } from 'kehikot-module-protocol/client/react'
 import { LIMITS, type ModuleContext } from 'kehikot-module-protocol'
 
 import { readHeads, type Head, type Heads } from '@/live/heads.ts'
+import { foundIn, type Found } from '@/live/lookup.ts'
 
 /**
  * The bridge, as one React value: the protocol's `useHost`, and this module's own reading of what
@@ -65,6 +66,11 @@ export interface Roadmap {
    */
   heads: Heads
   /**
+   * What the shared tracker reading says of selected references the open epic's own reading does
+   * not hold (a project-listed reference no step names), by ref. See `foundIn`.
+   */
+  elsewhere: ReadonlyMap<string, Found>
+  /**
    * When the host's shared tracker reading last changed, as the context says.
    * It moving is the signal that a detail asked for earlier may have landed.
    */
@@ -90,6 +96,7 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
      `sight` below is `useHost`'s `where`. */
   const [reading, setReading] = useState<Exclude<Sight, { at: 'listening' } | { at: 'unhosted' }>>({ at: 'no-epic' })
   const [heads, setHeads] = useState<Heads>({})
+  const [elsewhere, setElsewhere] = useState<ReadonlyMap<string, Found>>(() => new Map())
 
 
   /**
@@ -217,7 +224,11 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
       Object.fromEntries(asked.filter((ref) => !Object.hasOwn(was, ref)).map((ref) => [ref, { at: 'asking', since: undefined } as Head])),
     )
     void ask('tracker.get', { refs: asked, detail: 'detail' })
-      .then((data) => fill((was) => readHeads(asked, data, was)))
+      .then((data) => {
+        fill((was) => readHeads(asked, data, was))
+        const rows = foundIn(data)
+        if (rows.size && asking.current === mine) setElsewhere((was) => new Map([...was, ...rows]))
+      })
       .catch((error: unknown) => {
         const why =
           error instanceof HostRefused ? `Kehikot would not say: ${error.refusal.error}` : 'this app failed while reading the host’s answer'
@@ -254,6 +265,7 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
     /* The heads were asked for the epic that was open. A ref spelled the same
        in the next one is the next one's to ask about. */
     setHeads({})
+    setElsewhere(new Map())
 
     if (context.epic) look(context.epic)
     else {
@@ -281,7 +293,7 @@ export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
   const { selection, resize } = host
 
   return useMemo(
-    () => ({ sight, selection, heads, trackerAt, askHeads, resize }),
-    [sight, selection, heads, trackerAt, askHeads, resize],
+    () => ({ sight, selection, heads, elsewhere, trackerAt, askHeads, resize }),
+    [sight, selection, heads, elsewhere, trackerAt, askHeads, resize],
   )
 }

@@ -127,9 +127,11 @@ function Body({
     if (unread && epic) {
       return note(`Kehikot has no reading of ${epic} yet, so ${refName} cannot be looked up: whether it is a change, and where it lives, come from that reading.`)
     }
+    /* Asked of the project's shared tracker reading, because the epic's own holds only what the epic names. */
+    if (epic && head?.at === 'asking') return note(`Looking ${refName} up in the project’s tracker reading…`)
     return note(
       epic
-        ? `Nothing in Kehikot’s reading of ${epic} is filed under ${refName}, so this app cannot tell what kind of thing it is or where it lives. That happens when a reference is picked from a container showing another epic, or when nothing has refreshed it yet.`
+        ? `Nothing in Kehikot’s reading of ${epic} is filed under ${refName}, and the project’s tracker reading has no row for it either, so this app cannot tell what kind of thing it is or where it lives. That happens when a reference is picked from another project or from a repository this project does not read, or when nothing has refreshed the trackers since it appeared.`
         : `No epic is open, so there is no reading to look ${refName} up in.`,
     )
   }

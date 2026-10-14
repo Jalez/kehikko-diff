@@ -1,3 +1,5 @@
+import { trackerReadingResult } from 'kehikot-module-protocol'
+
 /**
  * Finding one reference inside a host's reading of an epic.
  *
@@ -124,6 +126,37 @@ export function index(live: unknown): Map<string, Found> {
         unreadable: !isObject(raw),
       })
     }
+  }
+  return out
+}
+
+/**
+ * Every reference in one answer of the host's SHARED tracker reading (`tracker.get`), as `Found`.
+ *
+ * ## Why this exists beside `index`
+ *
+ * `live.get` is the reading of one EPIC, and the host narrows it to the references
+ * that epic names. A reference somebody picked from References' "Show everything" —
+ * listed by the project's tracker, named by no step — is in the project's reading and
+ * in no epic's. `index` can never find it, and saying "nothing is filed under it"
+ * was true of the epic and misleading about the tracker. This reads the row where it
+ * is: the shared reading says its kind, address and state by its own words.
+ */
+export function foundIn(answer: unknown): Map<string, Found> {
+  const out = new Map<string, Found>()
+  const parsed = trackerReadingResult.safeParse(answer)
+  if (!parsed.success) return out
+  for (const row of parsed.data.rows) {
+    out.set(row.ref, {
+      ref: row.ref,
+      kind: row.kind === 'change' ? 'change' : 'work',
+      origin: row.tracker === 'gitlab' ? 'gitlab' : 'github',
+      url: row.url,
+      sha: row.detail?.headSha ?? '',
+      title: row.title,
+      state: row.state === 'open' ? 'opened' : row.state,
+      unreadable: false,
+    })
   }
   return out
 }
