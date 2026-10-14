@@ -106,7 +106,7 @@ export function App() {
     answer(true, '')
   }, [])
 
-  const { sight, selection, heads, trackerAt, askHeads, resize } = useKehikot(ID, onGoto)
+  const { sight, selection, heads, elsewhere, trackerAt, askHeads, resize } = useKehikot(ID, onGoto)
 
   /**
    * The references to draw, memoised on their SPELLING rather than on the array.
@@ -122,7 +122,13 @@ export function App() {
   const refs = useMemo(() => (key ? key.split(' ') : []), [key])
 
   /** Everything the open epic's reading says, by the spelling people write. */
-  const reading = useMemo(() => (sight.at === 'read' ? index(sight.live) : new Map<string, Found>()), [sight])
+  const own = useMemo(() => (sight.at === 'read' ? index(sight.live) : new Map<string, Found>()), [sight])
+  /**
+   * The epic's reading, and under it what the shared tracker reading says of a selected
+   * reference the epic does not name (one picked from the project's whole list). The epic's own
+   * entry wins where both have the ref: it is the one a refresh of that epic filed.
+   */
+  const reading = useMemo(() => (elsewhere.size ? new Map([...elsewhere, ...own]) : own), [own, elsewhere])
 
   /**
    * The selected references that are changes, which is exactly the set whose
@@ -136,9 +142,11 @@ export function App() {
   const changes = useMemo(
     () => refs.filter((ref) => {
       const found = reading.get(ref)
-      return found !== undefined && !found.unreadable && found.kind === 'change'
+      if (found) return !found.unreadable && found.kind === 'change'
+      /* Not in the epic's reading and not yet looked up: the project's tracker reading may hold it. */
+      return sight.at === 'read' && !Object.hasOwn(heads, ref)
     }).join(' '),
-    [refs, reading],
+    [refs, reading, sight, heads],
   )
   useEffect(() => {
     if (changes) askHeads(changes.split(' '))
@@ -154,7 +162,8 @@ export function App() {
     () =>
       refs.map((ref) => {
         const found = reading.get(ref)
-        if (!found || found.unreadable || found.kind !== 'change') return { ref, head: undefined, found }
+        if (!found) return { ref, head: Object.hasOwn(heads, ref) ? heads[ref] : undefined, found }
+        if (found.unreadable || found.kind !== 'change') return { ref, head: undefined, found }
         /* A change nobody has asked about yet is about to be: the effect above
            runs after this render. Reading it as `asking` already is what stops
            the automatic fetch going out for the reading's older head in the one

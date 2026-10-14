@@ -162,6 +162,61 @@ describe('useKehikot', () => {
       globalThis.fetch = realFetch
     }
   })
+  test('a reference the epic does not name is looked up in the shared tracker reading, and fetched at its head', async () => {
+    const fetched: string[] = []
+    const realFetch = globalThis.fetch
+    globalThis.fetch = (async (url: string) => {
+      fetched.push(String(url))
+      return new Response('{}', { status: 500 })
+    }) as unknown as typeof fetch
+    const row = (at: string, headSha?: string) => ({
+      at,
+      refreshing: false,
+      sources: [],
+      missing: [],
+      rows: [
+        {
+          ref: 'gh#201',
+          tracker: 'github',
+          host: 'github.com',
+          repo: 'scratch/thesis',
+          number: 201,
+          kind: 'change',
+          state: 'open',
+          title: 'Stand-in change',
+          url: 'https://github.com/scratch/thesis/pull/201',
+          readAt: at,
+          ...(headSha ? { detail: { readAt: at, headSha } } : {}),
+        },
+      ],
+    })
+    try {
+      const { container } = render(<App />)
+      act(() => events.onHello!({ ...context('a', AT), selection: ['gh#201'] }, null))
+      /* The epic's reading holds other references and not this one. */
+      await act(async () => answers[0]!({ ghPrs: { 'gh#7': { url: 'https://github.com/scratch/thesis/pull/7', sha: 'aaaa', title: 'Another' } }, ghIssues: {} }))
+      expect(asked[1]).toEqual({ method: 'tracker.get', params: { refs: ['gh#201'], detail: 'detail' } })
+      expect(container.textContent).not.toContain('is filed under gh#201')
+
+      await act(async () => answers[1]!(row(AT, 'cafe1234')))
+      expect(container.textContent).toContain('Stand-in change')
+      expect(container.textContent).not.toContain('is filed under gh#201')
+      expect(fetched).toHaveLength(1)
+      expect(fetched[0]).toContain('sha=cafe1234')
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  })
+
+
+  test('a reference neither reading holds says so, naming both readings', async () => {
+    const { container } = render(<App />)
+    act(() => events.onHello!({ ...context('a', AT), selection: ['gh#999'] }, null))
+    await act(async () => answers[0]!({ ghPrs: {}, ghIssues: {} }))
+    await act(async () => answers[1]!({ at: AT, refreshing: false, sources: [], rows: [], missing: [{ ref: 'gh#999', reason: 'not-found' }] }))
+    expect(container.textContent).toContain('is filed under gh#999')
+    expect(container.textContent).toContain('project’s tracker reading has no row for it either')
+  })
 })
 
 /*
