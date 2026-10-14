@@ -54,6 +54,7 @@ export function Change({
   ask,
   onAsk,
   epic,
+  unread = false,
 }: {
   refName: string
   found: Found | undefined
@@ -62,6 +63,8 @@ export function Change({
   ask: Ask | undefined
   onAsk: () => void
   epic: string | null
+  /** The host has no reading of the epic (refused, or none): said as that, not as "not filed under". */
+  unread?: boolean
 }) {
   return (
     <section className="flex min-w-0 flex-col gap-1" data-ref={refName} data-kind={found?.kind ?? 'unknown'}>
@@ -96,7 +99,7 @@ export function Change({
         </p>
       ) : null}
 
-      <Body refName={refName} found={found} head={head} ask={ask} onAsk={onAsk} epic={epic} />
+      <Body refName={refName} found={found} head={head} ask={ask} onAsk={onAsk} epic={epic} unread={unread} />
     </section>
   )
 }
@@ -108,6 +111,7 @@ function Body({
   ask,
   onAsk,
   epic,
+  unread,
 }: {
   refName: string
   found: Found | undefined
@@ -115,10 +119,14 @@ function Body({
   ask: Ask | undefined
   onAsk: () => void
   epic: string | null
+  unread: boolean
 }) {
   const note = (text: string) => <p className="text-[0.7rem] leading-4 text-muted-foreground">{text}</p>
 
   if (!found) {
+    if (unread && epic) {
+      return note(`Kehikot has no reading of ${epic} yet, so ${refName} cannot be looked up: whether it is a change, and where it lives, come from that reading.`)
+    }
     return note(
       epic
         ? `Nothing in Kehikot’s reading of ${epic} is filed under ${refName}, so this app cannot tell what kind of thing it is or where it lives. That happens when a reference is picked from a container showing another epic, or when nothing has refreshed it yet.`
