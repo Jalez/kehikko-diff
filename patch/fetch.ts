@@ -12,8 +12,8 @@ import type { Target } from './locate.ts'
  * credential, refresh it, and know about enterprise hosts, SSO and proxies. A
  * module that read a token out of a config file to make its own HTTPS call would
  * be a second, worse copy of authentication that breaks the first time somebody
- * uses a device flow. The roadmap this was extracted from shells out for exactly
- * this reason — see `src/trackers/exec.ts` there — and so does this.
+ * uses a device flow. The host's tracker layer shells out for exactly this
+ * reason, and so does this.
  *
  * ## The argument list is an array, and there is no shell
  *
@@ -168,8 +168,8 @@ export function command(target: Target): { cmd: string; args: string[]; env: Rec
  * `{ ok: false, error }` with the CLI's own words in it where there are any.
  * That is deliberate: `gh` says "gh auth login" when the token has gone, and
  * that sentence is worth a hundred times more to the person reading this container
- * than "the diff could not be fetched" would be. The roadmap's own tracker layer
- * makes the same choice for the same reason.
+ * than "the diff could not be fetched" would be. The host's tracker layer makes
+ * the same choice for the same reason.
  *
  * Not retried, unlike Kehikot's `json()`. That function retries because a
  * dropped read there would quietly SHRINK what an epic tracks — a wrong answer
