@@ -48,7 +48,7 @@ export type Sight =
   | { at: 'unread'; epic: string }
   | { at: 'read'; epic: string; live: unknown }
 
-export interface Roadmap {
+export interface Kehikot {
   sight: Sight
   /**
    * What the canvas has picked out, as the host last said it.
@@ -91,7 +91,7 @@ export interface Roadmap {
  */
 export type GotoHandler = NonNullable<HostEvents['onGoto']>
 
-export function useKehikot(id: string, onGoto: GotoHandler): Roadmap {
+export function useKehikot(id: string, onGoto: GotoHandler): Kehikot {
   /* What the host's reading of the open epic is, once anything is framing this page. Before that,
      `sight` below is `useHost`'s `where`. */
   const [reading, setReading] = useState<Exclude<Sight, { at: 'listening' } | { at: 'unhosted' }>>({ at: 'no-epic' })

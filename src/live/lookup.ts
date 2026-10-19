@@ -28,7 +28,7 @@ import { trackerReadingResult } from 'kehikot-module-protocol'
  *
  * - **The kind**, from which bag it is in, as above.
  * - **The `url`**, which is the only place the repository is written down. A ref
- *   is `gh#105`; `https://github.com/jaakkorajalasol/roadmap/pull/105` is what
+ *   is `gh#105`; `https://github.com/jaakkorajalasol/thesis/pull/105` is what
  *   can become a command line. `patch/locate.ts` does that reading.
  * - **The `sha`**, the head commit the tracker saw. It is what this app's cache
  *   is keyed on, and it is why switching between two selected changes does not
