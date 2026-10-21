@@ -1,6 +1,6 @@
 {
   "name": "kehikko-diff",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "The diff of whichever change is selected on the canvas, read from the tracker CLI already on this machine. An app: its own page, its own port, its own cache. A host may frame it, and then it knows which refs to look at.",
