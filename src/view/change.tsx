@@ -1,3 +1,5 @@
+import type { CodeLocation, SharedLocation } from 'kehikot-module-protocol'
+
 import { Badge } from '@/components/ui/badge.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import type { Patch } from '@/diff/ask.ts'
@@ -55,6 +57,8 @@ export function Change({
   onAsk,
   epic,
   unread = false,
+  location = null,
+  onLocate,
 }: {
   refName: string
   found: Found | undefined
@@ -65,6 +69,10 @@ export function Change({
   epic: string | null
   /** The host has no reading of the epic (refused, or none): said as that, not as "not filed under". */
   unread?: boolean
+  /** Where the canvas is pointing in a change's code (protocol 2.13.0). */
+  location?: SharedLocation | null
+  /** Point the canvas at a line of this change. */
+  onLocate?: (location: CodeLocation, intent: 'show' | 'comment') => void
 }) {
   return (
     <section className="flex min-w-0 flex-col gap-1" data-ref={refName} data-kind={found?.kind ?? 'unknown'}>
@@ -99,7 +107,7 @@ export function Change({
         </p>
       ) : null}
 
-      <Body refName={refName} found={found} head={head} ask={ask} onAsk={onAsk} epic={epic} unread={unread} />
+      <Body refName={refName} found={found} head={head} ask={ask} onAsk={onAsk} epic={epic} unread={unread} location={location} onLocate={onLocate} />
     </section>
   )
 }
@@ -112,6 +120,8 @@ function Body({
   onAsk,
   epic,
   unread,
+  location,
+  onLocate,
 }: {
   refName: string
   found: Found | undefined
@@ -120,6 +130,8 @@ function Body({
   onAsk: () => void
   epic: string | null
   unread: boolean
+  location: SharedLocation | null
+  onLocate?: (location: CodeLocation, intent: 'show' | 'comment') => void
 }) {
   const note = (text: string) => <p className="text-[0.7rem] leading-4 text-muted-foreground">{text}</p>
 
@@ -227,7 +239,7 @@ function Body({
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <PatchView patch={ask.patch} />
+      <PatchView patch={ask.patch} change={refName} location={location} onLocate={onLocate} />
       {/*
         Where this came from, said every time.
 

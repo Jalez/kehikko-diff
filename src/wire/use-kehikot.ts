@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 
 import { HostRefused, type HostEvents, type Refusal } from 'kehikot-module-protocol/client'
 import { useHost } from 'kehikot-module-protocol/client/react'
-import { LIMITS, type ModuleContext } from 'kehikot-module-protocol'
+import { LIMITS, type CodeLocation, type LocationIntent, type LocationSetResult, type ModuleContext, type SharedLocation } from 'kehikot-module-protocol'
 
 import { readHeads, type Head, type Heads } from '@/live/heads.ts'
 import { foundIn, type Found } from '@/live/lookup.ts'
@@ -79,6 +79,10 @@ export interface Kehikot {
   askHeads: (refs: readonly string[]) => void
   /** Say how tall this page would like its frame to be. Silent when nothing is framing it. */
   resize: (height: number) => void
+  /** Where the canvas is pointing in a change's code (protocol 2.13.0), or null. */
+  location: SharedLocation | null
+  /** Point the canvas at a line of a change; resolves with the host's answer, or null when nothing took it. */
+  locate: (location: CodeLocation | null, intent?: LocationIntent) => Promise<LocationSetResult | null>
 }
 
 /**
@@ -290,10 +294,10 @@ export function useKehikot(id: string, onGoto: GotoHandler): Kehikot {
   /* Absent from a host older than the shared tracker reading, and then it never moves — which is
      right: such a host has no detail to wait for. */
   const trackerAt = host.context?.tracker?.at ?? null
-  const { selection, resize } = host
+  const { selection, resize, location, locate } = host
 
   return useMemo(
-    () => ({ sight, selection, heads, elsewhere, trackerAt, askHeads, resize }),
-    [sight, selection, heads, elsewhere, trackerAt, askHeads, resize],
+    () => ({ sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate }),
+    [sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate],
   )
 }

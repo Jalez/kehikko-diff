@@ -1,9 +1,10 @@
-import { ChevronRight } from 'lucide-react'
-import { useState, type CSSProperties } from 'react'
+import { ChevronRight, MessageSquarePlus } from 'lucide-react'
+import { useEffect, useRef, useState, type CSSProperties, type Ref } from 'react'
 
 import { Badge } from '@/components/ui/badge.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { FILE_LINES } from '@/diff/budget.ts'
+import { named, placeOf, reach, type Spot } from '@/diff/located.ts'
 import type { DiffLine, FileDiff } from '@/diff/parse.ts'
 import { cn } from '@/lib/utils.ts'
 
@@ -44,7 +45,10 @@ const STATUS: Record<FileDiff['status'], string> = {
   modified: 'changed',
 }
 
-function Line({ line }: { line: DiffLine }) {
+/** A press on a line: "Comment on this line", or a line number (`old`, `new`). See `diff/located.ts`. */
+export type Point = (line: DiffLine, which: 'comment' | 'old' | 'new') => void
+
+function Line({ line, located = false, onPoint, ref }: { line: DiffLine; located?: boolean; onPoint?: Point; ref?: Ref<HTMLDivElement> | null }) {
   /*
    * A note — git's `\ No newline at end of file` — is neither side of the diff
    * and gets neither number and no wash. Drawing it as a context line would be
@@ -54,7 +58,13 @@ function Line({ line }: { line: DiffLine }) {
   const mark = line.kind === 'add' ? '+' : line.kind === 'del' ? '-' : line.kind === 'note' ? '\\' : ' '
   const markTone = line.kind === 'add' ? 'text-add-mark' : line.kind === 'del' ? 'text-del-mark' : 'text-gutter'
   return (
-    <div className={cn('diff-row', wash)}>
+    <div
+      ref={ref}
+      className={cn('diff-row group relative', wash, located && 'outline outline-2 -outline-offset-2 outline-primary')}
+      data-line-old={line.old ?? undefined}
+      data-line-new={line.new ?? undefined}
+      data-located={located ? 'yes' : undefined}
+    >
       {/* Two gutters, both always present even when one is empty: a number that
           moves column depending on the kind of line is a number nobody can scan
           down. `select-none` so that dragging across the code to copy it does not
@@ -68,15 +78,49 @@ function Line({ line }: { line: DiffLine }) {
           and the overflow simply drew over the neighbour. Sizing to the content
           per ROW would fix the clipping and break the alignment, which is worse:
           the whole value of a gutter is that it is a column. */}
-      <span className="w-[var(--gutter-ch)] shrink-0 select-none pr-1 text-right text-gutter">{line.old ?? ''}</span>
-      <span className="w-[var(--gutter-ch)] shrink-0 select-none pr-1 text-right text-gutter">{line.new ?? ''}</span>
+      <Gutter line={line} which="old" onPoint={onPoint} />
+      <Gutter line={line} which="new" onPoint={onPoint} />
       <span className={cn('w-[1.5ch] shrink-0 select-none', markTone)}>{mark}</span>
       {/* The one part of the row that gives: it takes the width the gutters
           leave and wraps inside it, so a long line continues under its own
           text. `min-w-0` because a flex item otherwise refuses to be narrower
           than its longest unbroken run, which is the sideways scroll again. */}
       <span className="min-w-0 flex-1 pr-2">{line.text}</span>
+      {/* "Comment on this line": shown on hover and on focus, a real button for
+          the keyboard. It asks Review, through the canvas, for a comment here. */}
+      {onPoint && placeOf(line, 'comment') ? (
+        <button
+          type="button"
+          aria-label="Comment on this line"
+          title="Comment on this line"
+          className="absolute top-0 right-0 shrink-0 rounded-sm bg-card px-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground"
+          onClick={() => onPoint(line, 'comment')}
+        >
+          <MessageSquarePlus aria-hidden="true" className="size-3" />
+        </button>
+      ) : null}
     </div>
+  )
+}
+
+/**
+ * A gutter's number, and — on a change the canvas can point into — a press
+ * that points there (`show`), so Source opens the file at that line.
+ */
+function Gutter({ line, which, onPoint }: { line: DiffLine; which: 'old' | 'new'; onPoint?: Point }) {
+  const number = which === 'old' ? line.old : line.new
+  const tone = 'w-[var(--gutter-ch)] shrink-0 select-none pr-1 text-right text-gutter'
+  if (!onPoint || number === null) return <span className={tone}>{number ?? ''}</span>
+  return (
+    <button
+      type="button"
+      className={cn(tone, 'cursor-pointer hover:text-foreground hover:underline')}
+      title={`Show line ${number} ${which === 'old' ? 'before the change' : 'as the change has it'}`}
+      aria-label={`Show ${which === 'old' ? 'old' : 'new'} line ${number}`}
+      onClick={() => onPoint(line, which)}
+    >
+      {number}
+    </button>
   )
 }
 
@@ -84,10 +128,16 @@ export function FileSection({
   file,
   open,
   onToggle,
+  spot = null,
+  onPoint,
 }: {
   file: FileDiff
   open: boolean
   onToggle: () => void
+  /** The lines a code location names in this file: drawn, marked and scrolled to. */
+  spot?: Spot | null
+  /** Presses on its lines, when the canvas can be pointed into this change. */
+  onPoint?: Point
 }) {
   /**
    * How much of this one file is rendered.
@@ -99,6 +149,19 @@ export function FileSection({
    * ago against a diff that has since been refetched.
    */
   const [shown, setShown] = useState(FILE_LINES)
+  /* A location past what is drawn draws far enough to reach it, and a screenful past it. */
+  const needed = reach(file, spot)
+  useEffect(() => {
+    if (needed >= 0) setShown((was) => (needed < was ? was : needed + FILE_LINES))
+  }, [needed])
+
+  /* The first named line, scrolled to whenever somebody points (a repeat included); otherwise the file. */
+  const first = useRef<HTMLDivElement | null>(null)
+  const section = useRef<HTMLDetailsElement | null>(null)
+  useEffect(() => {
+    if (!spot) return
+    ;(first.current ?? section.current)?.scrollIntoView({ block: 'center', behavior: 'auto' })
+  }, [spot?.side, spot?.from, spot?.to, spot?.at, shown])
 
   /*
    * How many digits the widest line number in this file needs.
@@ -144,8 +207,16 @@ export function FileSection({
     }
   }
 
+  let anchored = false
+  const anchor = (line: DiffLine) => {
+    if (anchored || !named(line, spot)) return null
+    anchored = true
+    return first
+  }
+
   return (
     <details
+      ref={section}
       open={open}
       onToggle={(e) => {
         /* Guarded, because `<details>` fires `toggle` on the initial render when
@@ -156,6 +227,7 @@ export function FileSection({
       className="min-w-0 rounded-md border bg-card"
       data-file={file.path}
       data-open={open ? 'yes' : 'no'}
+      data-located={spot ? 'yes' : undefined}
     >
       {/*
         A flex row of three parts, and the middle one carries `min-w-0`.
@@ -228,11 +300,19 @@ export function FileSection({
                 <span className="min-w-0 flex-1">{row.header}</span>
               </div>
             ) : (
-              <Line key={at} line={row.line} />
+              <Line key={at} line={row.line} located={named(row.line, spot)} onPoint={onPoint} ref={anchor(row.line)} />
             ),
           )}
         </div>
       )}
+
+      {spot && needed < 0 && !file.binary ? (
+        /* The patch prints only what changed and a little around it. A line it
+           does not print is still in the file: Source shows the whole of it. */
+        <p className="border-t px-2 py-1 text-[0.7rem] leading-4 text-muted-foreground" data-testid="not-in-patch">
+          {`${spot.from === spot.to ? `Line ${spot.from} is` : `Lines ${spot.from}–${spot.to} are`}${spot.side === 'old' ? ' (before the change)' : ''} not in what the patch prints for this file. Source shows the whole file.`}
+        </p>
+      ) : null}
 
       {cut > 0 ? (
         /* The count is exact and it is the point. "Showing part of this file"

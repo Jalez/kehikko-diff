@@ -343,3 +343,30 @@ describe('the not-ready moments are the shared cover', () => {
     expect(container.textContent).toContain('one.txt')
   })
 })
+
+describe('a code location (protocol 2.13.0)', () => {
+  const location = { change: '!3105', path: 'src/app.ts', line: 7, side: 'new', intent: 'comment', by: 'kehikot.review', at: AT }
+
+  test('the context’s location is the hook’s, and none is null', () => {
+    const { result } = renderHook(() => useKehikot('diff', () => {}))
+    act(() => events.onHello!({ ...context('a'), selection: ['!3105'], location }, null))
+    expect(result.current.location).toEqual(location as never)
+    act(() => events.onContext!({ ...context('a'), selection: ['!3105'] }))
+    expect(result.current.location).toBeNull()
+  })
+
+  test('locate asks location.set with the place and the intent, and hands back the answer', async () => {
+    const { result } = renderHook(() => useKehikot('diff', () => {}))
+    act(() => events.onHello!({ ...context('a'), selection: ['!3105'] }, null))
+    const place = { change: '!3105', path: 'src/app.ts', line: 7, side: 'new' as const, commit: 'abc1234' }
+    let answered: unknown = undefined
+    await act(async () => {
+      const pending = result.current.locate(place, 'show').then((one) => (answered = one))
+      const at = requests().findIndex((one) => one.method === 'location.set')
+      expect(requests()[at]?.params).toEqual({ location: place, intent: 'show' })
+      answers[at]!({ outcome: 'taken', why: '' })
+      await pending
+    })
+    expect(answered).toEqual({ outcome: 'taken', why: '' })
+  })
+})
