@@ -179,6 +179,9 @@ export const MANIFEST: Manifest = manifestSchema.parse({
   protocol: PROTOCOL,
   id: ID,
   name: 'Diff',
+  /* The icon a host draws beside the name: a key of the protocol's module icons, never a path
+     or URL; the same key Kehikot's official list gives it. */
+  icon: 'lucide:git-compare',
   version: VERSION,
   /* Where a host files this module in its list, most fitting first. */
   tags: ['code', 'review'],
