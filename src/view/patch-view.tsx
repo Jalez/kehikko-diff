@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { CodeLocation, SharedLocation } from 'kehikot-module-protocol'
 
 import { Badge } from '@/components/ui/badge.tsx'
 import type { Patch } from '@/diff/ask.ts'
 import { plan } from '@/diff/budget.ts'
+import { locationAt, placeOf, spotIn } from '@/diff/located.ts'
 import { totals } from '@/diff/parse.ts'
 
 import { FileSection } from './file-diff.tsx'
@@ -30,7 +32,20 @@ import { FileSection } from './file-diff.tsx'
  * closed, and the number of lines behind them is stated so nobody has to guess
  * whether closed means small.
  */
-export function PatchView({ patch }: { patch: Patch }) {
+export function PatchView({
+  patch,
+  change = null,
+  location = null,
+  onLocate,
+}: {
+  patch: Patch
+  /** The change this is the patch of, as the selection spells it. */
+  change?: string | null
+  /** Where the canvas is pointing in a change's code (protocol 2.13.0): its file is opened and its lines marked. */
+  location?: SharedLocation | null
+  /** Point the canvas at a line: "Comment on this line" (`comment`), or a line number (`show`). */
+  onLocate?: (location: CodeLocation, intent: 'show' | 'comment') => void
+}) {
   const sum = useMemo(() => totals(patch.files), [patch.files])
   const opening = useMemo(() => plan(patch.files), [patch.files])
 
@@ -42,6 +57,17 @@ export function PatchView({ patch }: { patch: Patch }) {
    * open and close together.
    */
   const [moved, setMoved] = useState<Record<number, boolean>>({})
+
+  /* Pointing at a file opens it, even one the reader closed: each new pointing (`at`) is asked again. */
+  const pointedAt = change ? patch.files.findIndex((file) => spotIn(location, change, file) !== null) : -1
+  useEffect(() => {
+    if (pointedAt < 0) return
+    setMoved((was) => {
+      if (!(pointedAt in was)) return was
+      const { [pointedAt]: _gone, ...rest } = was
+      return rest
+    })
+  }, [pointedAt, location?.at, location?.line])
 
   if (!patch.files.length) {
     return (
@@ -80,14 +106,27 @@ export function PatchView({ patch }: { patch: Patch }) {
         </p>
       ) : null}
 
-      {patch.files.map((file, at) => (
-        <FileSection
-          key={at}
-          file={file}
-          open={moved[at] ?? opening.open.has(at)}
-          onToggle={() => setMoved((was) => ({ ...was, [at]: !(was[at] ?? opening.open.has(at)) }))}
-        />
-      ))}
+      {patch.files.map((file, at) => {
+        const spot = change ? spotIn(location, change, file) : null
+        return (
+          <FileSection
+            key={at}
+            file={file}
+            /* The file a location is in is open: that is where somebody is pointing. */
+            open={moved[at] ?? (spot !== null || opening.open.has(at))}
+            onToggle={() => setMoved((was) => ({ ...was, [at]: !(was[at] ?? opening.open.has(at)) }))}
+            spot={spot}
+            onPoint={
+              change && onLocate
+                ? (line, which) => {
+                    const place = placeOf(line, which)
+                    if (place) onLocate(locationAt(change, file, place, patch.sha), which === 'comment' ? 'comment' : 'show')
+                  }
+                : undefined
+            }
+          />
+        )
+      })}
     </div>
   )
 }

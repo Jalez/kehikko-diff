@@ -1,6 +1,7 @@
 import { MousePointerClick, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import type { CodeLocation } from 'kehikot-module-protocol'
 import { probeServer } from 'kehikot-module-protocol/client'
 import { Cover, coverFor, useServerStanding, type CoverState } from 'kehikot-module-protocol/client/react'
 
@@ -106,7 +107,29 @@ export function App() {
     answer(true, '')
   }, [])
 
-  const { sight, selection, heads, elsewhere, trackerAt, askHeads, resize } = useKehikot(ID, onGoto)
+  const { sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate } = useKehikot(ID, onGoto)
+
+  /*
+   * Pointing the canvas at a line of a change (protocol 2.13.0): a line number
+   * says "show" — Source opens the file there — and "Comment on this line" asks
+   * Review for a comment. What the host says when it does not take one is said
+   * here, once, until the next press.
+   */
+  const [refused, setRefused] = useState<string | null>(null)
+  const onLocate = useCallback(
+    (place: CodeLocation, intent: 'show' | 'comment') => {
+      void locate(place, intent).then((answer) => {
+        setRefused(
+          answer === null
+            ? 'Kehikot did not take that: nothing framing this page points at code.'
+            : answer.outcome === 'taken'
+              ? null
+              : answer.why || 'Kehikot did not take that.',
+        )
+      })
+    },
+    [locate],
+  )
 
   /**
    * The references to draw, memoised on their SPELLING rather than on the array.
@@ -217,6 +240,27 @@ export function App() {
   }, [autoRef, autoSha, ask])
 
   /** Say how tall we would like to be, whenever what is drawn changes size. */
+  /* A change the canvas points into is fetched too, as the first one is: somebody is pointing at a line of it. */
+  const pointed = useMemo(
+    () => entries.find((e) => e.ref === location?.change && e.found && !e.found.unreadable && e.found.kind === 'change' && e.found.url && e.found.sha)?.found,
+    [entries, location?.change],
+  )
+  const pointedRef = pointed?.ref ?? ''
+  const pointedSha = pointed?.sha ?? ''
+  useEffect(() => {
+    if (pointed && pointedRef && pointedSha) ask(pointed)
+    /* The two strings are the identity, for `auto`'s reason. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pointedRef, pointedSha, ask])
+
+  /* With more than one change on screen, the one pointed into is scrolled to — unless one of its
+     lines is already marked, which its file scrolls to itself (`FileSection`). */
+  useEffect(() => {
+    if (!location?.change || refs.length < 2) return
+    const section = document.querySelector(`[data-ref="${CSS.escape(location.change)}"]`)
+    if (section && !section.querySelector('[data-located="yes"]')) section.scrollIntoView({ block: 'start', behavior: 'auto' })
+  }, [location?.change, location?.at, refs.length])
+
   const shell = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     const node = shell.current
@@ -286,6 +330,11 @@ export function App() {
             {entries.length === 1 ? 'One reference is' : `${entries.length} references are`} selected on the canvas
             {taken ? `; Kehikot last read this epic at ${taken}` : ''}.
           </p>
+          {refused ? (
+            <p className="text-[0.7rem] leading-4 text-muted-foreground" data-testid="refused">
+              {refused}
+            </p>
+          ) : null}
           {entries.map((entry) => (
             <Change
               key={entry.ref}
@@ -296,6 +345,8 @@ export function App() {
               onAsk={() => entry.found && ask(entry.found)}
               epic={epic}
               unread={sight.at === 'refused' || sight.at === 'unread'}
+              location={location}
+              onLocate={onLocate}
             />
           ))}
         </>

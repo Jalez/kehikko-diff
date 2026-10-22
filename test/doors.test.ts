@@ -59,10 +59,11 @@ describe('manifest', () => {
     expect(MANIFEST.entry).toBe('/')
   })
 
-  test('it asks for the two capabilities it cannot work without, and no others', () => {
-    /* What a ref is and where it lives, and which commit is at its head. */
-    expect(MANIFEST.declares.uses).toEqual(['live:read', 'trackers:read'])
-    expect(MANIFEST.reacts).toEqual(['selection', 'tracker'])
+  test('it asks for the two capabilities it cannot work without, the one that points at a line, and no others', () => {
+    /* What a ref is and where it lives, and which commit is at its head; and
+       (1.2.0) a code location, sent on a press of a line. */
+    expect(MANIFEST.declares.uses).toEqual(['live:read', 'trackers:read', 'location:set'])
+    expect(MANIFEST.reacts).toEqual(['selection', 'tracker', 'location'])
   })
 
   test('storage is declared, which is what keeps the credentialed door same-origin', () => {

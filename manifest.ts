@@ -196,7 +196,8 @@ export const MANIFEST: Manifest = manifestSchema.parse({
     'this is the diff. If they disagree, the diff is what happened and the disagreement is itself ' +
     'worth reporting. The selection is the scope: review what is selected rather than the whole ' +
     'branch, and if a file in it looks wrong for reasons outside the selection, write that down ' +
-    'instead of widening what you touch.',
+    'instead of widening what you touch. The canvas may point at a line of the change (context.location); ' +
+    'set one to show the person a line here and in Source.',
   entry: '/',
   modes: [{ id: 'diff', label: 'Diff', scope: 'epic' }],
   extensions: { emits: [], consumes: [] },
@@ -228,18 +229,26 @@ export const MANIFEST: Manifest = manifestSchema.parse({
    * the host's tracker reading, and the first answer is usually "not read yet":
    * the reading moving is what says to ask again. See `src/live/heads.ts`.
    *
+   * `location` (1.2.0, protocol 2.13.0): somebody pointed at a line of a
+   * change — a comment's reference in Review, a line number here. This page
+   * opens that file of that change, draws far enough to reach the line, marks
+   * it on the gutter its `side` names and scrolls to it.
+   *
    * `passage` is deliberately not here. A patch is a change to a repository, and where
    * somebody is pointing inside a `.tex` says nothing about which change to
    * show. Ticking a word here that the code does not act on would put a name
    * in somebody's registry that is not true of this program.
    */
-  reacts: ['selection', 'tracker'],
+  reacts: ['selection', 'tracker', 'location'],
   /* Why this module has nothing to narrow by the parts of an epic: it has no list. It shows one
      thing, the change somebody selected, and that is in their hands whatever is picked. */
   partless: 'Shows the one change a person selected, which is always in hand.',
   declares: {
     protocol: `>=${PROTOCOL} <${PROTOCOL + 1}`,
-    uses: ['live:read', 'trackers:read'],
+    /* `location:set` (1.2.0): a press on a line number points the canvas there
+       ("show", so Source follows), and "Comment on this line" asks Review for a
+       comment ("comment"). On a press, never on a scroll. */
+    uses: ['live:read', 'trackers:read', 'location:set'],
     storage: true,
     prompt: false,
   },
