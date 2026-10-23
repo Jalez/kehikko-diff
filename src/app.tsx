@@ -1,4 +1,5 @@
 import { MousePointerClick, type LucideIcon } from 'lucide-react'
+import { OpenAddressContext } from '@/view/out-link.tsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { CodeLocation } from 'kehikot-module-protocol'
@@ -107,7 +108,7 @@ export function App() {
     answer(true, '')
   }, [])
 
-  const { sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate } = useKehikot(ID, onGoto)
+  const { sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress } = useKehikot(ID, onGoto)
 
   /*
    * Pointing the canvas at a line of a change (protocol 2.13.0): a line number
@@ -305,6 +306,7 @@ export function App() {
   const taken = sight.at === 'read' ? generatedAt(sight.live) : null
 
   return (
+    <OpenAddressContext.Provider value={openAddress}>
     <div ref={shell} className="flex min-w-0 flex-col gap-2 p-2 text-foreground">
       {framed ? null : (
         <header>
@@ -359,6 +361,7 @@ export function App() {
       )}
       </div>
     </div>
+    </OpenAddressContext.Provider>
   )
 }
 

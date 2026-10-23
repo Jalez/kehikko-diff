@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 
+import { openerOf, type OpenAddress } from '@/lib/links.ts'
 import { HostRefused, type HostEvents, type Refusal } from 'kehikot-module-protocol/client'
 import { useHost } from 'kehikot-module-protocol/client/react'
 import { LIMITS, type CodeLocation, type LocationIntent, type LocationSetResult, type ModuleContext, type SharedLocation } from 'kehikot-module-protocol'
@@ -83,6 +84,8 @@ export interface Kehikot {
   location: SharedLocation | null
   /** Point the canvas at a line of a change; resolves with the host's answer, or null when nothing took it. */
   locate: (location: CodeLocation | null, intent?: LocationIntent) => Promise<LocationSetResult | null>
+  /** Hands a web address to the canvas (`address.open`, protocol 2.16.0); null when the host does not answer it. */
+  openAddress: OpenAddress | null
 }
 
 /**
@@ -295,9 +298,12 @@ export function useKehikot(id: string, onGoto: GotoHandler): Kehikot {
      right: such a host has no detail to wait for. */
   const trackerAt = host.context?.tracker?.at ?? null
   const { selection, resize, location, locate } = host
+  const hostOpens = host.openAddress
+  const hostAnswers = host.answers
+  const openAddress = useMemo(() => openerOf({ answers: hostAnswers, openAddress: hostOpens }), [hostAnswers, hostOpens])
 
   return useMemo(
-    () => ({ sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate }),
-    [sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate],
+    () => ({ sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress }),
+    [sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress],
   )
 }

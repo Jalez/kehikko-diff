@@ -251,7 +251,7 @@ export const MANIFEST: Manifest = manifestSchema.parse({
     /* `location:set` (1.2.0): a press on a line number points the canvas there
        ("show", so Source follows), and "Comment on this line" asks Review for a
        comment ("comment"). On a press, never on a scroll. */
-    uses: ['live:read', 'trackers:read', 'location:set'],
+    uses: ['live:read', 'trackers:read', 'location:set', 'address:open'],
     storage: true,
     prompt: false,
   },

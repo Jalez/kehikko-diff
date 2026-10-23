@@ -62,7 +62,7 @@ describe('manifest', () => {
   test('it asks for the two capabilities it cannot work without, the one that points at a line, and no others', () => {
     /* What a ref is and where it lives, and which commit is at its head; and
        (1.2.0) a code location, sent on a press of a line. */
-    expect(MANIFEST.declares.uses).toEqual(['live:read', 'trackers:read', 'location:set'])
+    expect(MANIFEST.declares.uses).toEqual(['live:read', 'trackers:read', 'location:set', 'address:open'])
     expect(MANIFEST.reacts).toEqual(['selection', 'tracker', 'location'])
   })
 
