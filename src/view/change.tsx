@@ -1,5 +1,6 @@
 import type { CodeLocation, SharedLocation } from 'kehikot-module-protocol'
 
+import { OutLink } from '@/view/out-link.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import type { Patch } from '@/diff/ask.ts'
@@ -94,15 +95,7 @@ export function Change({
           {found.state ? <Badge>{found.state}</Badge> : null}
           {found.sha ? <span className="font-mono">{short(found.sha)}</span> : null}
           {found.url ? (
-            <>
-              {/* `noreferrer` as well as `noopener`: this page may be running on
-                  an opaque origin depending on how a host framed it, and a
-                  referrer of "null" is no use to anybody while a real one leaks
-                  which host somebody is reading. */}
-              <a className="underline underline-offset-2" href={found.url} target="_blank" rel="noopener noreferrer">
-                open on the tracker
-              </a>
-            </>
+            <OutLink href={found.url}>open on the tracker</OutLink>
           ) : null}
         </p>
       ) : null}
