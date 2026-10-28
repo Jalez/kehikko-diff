@@ -202,7 +202,10 @@ export const MANIFEST: Manifest = manifestSchema.parse({
     'instead of widening what you touch. The canvas may point at a line of the change (context.location); ' +
     'set one to show the person a line here and in Source.',
   entry: '/',
-  modes: [{ id: 'diff', label: 'Diff', scope: 'epic' }],
+  /* What its content belongs to (protocol 2.29.0): one mode per scope, the default first. */
+  modes: [
+    { id: 'diff', label: 'Diff', scope: 'part', scopeSays: 'the diff of each change picked out, one at a time' },
+  ],
   extensions: { emits: [], consumes: [] },
   /**
    * ## `reacts: ['selection']`, which is a description and not a request
