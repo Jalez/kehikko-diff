@@ -86,6 +86,10 @@ export interface Kehikot {
   locate: (location: CodeLocation | null, intent?: LocationIntent) => Promise<LocationSetResult | null>
   /** Hands a web address to the canvas (`address.open`, protocol 2.16.0); null when the host does not answer it. */
   openAddress: OpenAddress | null
+  /** Whether the host draws this page's declared footer (protocol 2.38.0); anything but `true` means no. */
+  drawsFooter: boolean | null
+  /** Declare the footer. Only when `drawsFooter` is true. */
+  footer: ReturnType<typeof useHost>['footer']
 }
 
 /**
@@ -297,13 +301,14 @@ export function useKehikot(id: string, onGoto: GotoHandler): Kehikot {
   /* Absent from a host older than the shared tracker reading, and then it never moves — which is
      right: such a host has no detail to wait for. */
   const trackerAt = host.context?.tracker?.at ?? null
-  const { selection, resize, location, locate } = host
+  const { selection, resize, location, locate, footer } = host
+  const drawsFooter = host.where === 'hosted' ? host.drawsFooter : null
   const hostOpens = host.openAddress
   const hostAnswers = host.answers
   const openAddress = useMemo(() => openerOf({ answers: hostAnswers, openAddress: hostOpens }), [hostAnswers, hostOpens])
 
   return useMemo(
-    () => ({ sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress }),
-    [sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress],
+    () => ({ sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress, drawsFooter, footer }),
+    [sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress, drawsFooter, footer],
   )
 }
