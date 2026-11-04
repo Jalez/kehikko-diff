@@ -12,6 +12,7 @@ import { askDiff } from '@/diff/ask.ts'
 import { headFor, type Head } from '@/live/heads.ts'
 import { generatedAt, index, type Found } from '@/live/lookup.ts'
 import { Change, type Ask } from '@/view/change.tsx'
+import { footerItems } from '@/view/footer.ts'
 import { useKehikot, type GotoHandler, type Sight } from '@/wire/use-kehikot.ts'
 
 /**
@@ -108,7 +109,7 @@ export function App() {
     answer(true, '')
   }, [])
 
-  const { sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress } = useKehikot(ID, onGoto)
+  const { sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress, drawsFooter, footer } = useKehikot(ID, onGoto)
 
   /*
    * Pointing the canvas at a line of a change (protocol 2.13.0): a line number
@@ -305,6 +306,27 @@ export function App() {
   const epic = sight.at === 'read' || sight.at === 'asking' || sight.at === 'unread' || sight.at === 'refused' ? sight.epic : null
   const taken = sight.at === 'read' ? generatedAt(sight.live) : null
 
+  /*
+   * The footer the host draws, when it draws one (2.38.0): what is selected and how big its diff
+   * is, and what the host said to a pointed line. The page then drops the line it drew above the
+   * changes. An older host draws no footer, and the page keeps that line.
+   */
+  const footed = drawsFooter === true && whole === null
+  const firstAsked = entries.find((entry) => entry.found && got[`${entry.found.ref}|${entry.found.sha}`])
+  const footerSaid = footed
+    ? JSON.stringify(
+        footerItems({
+          refs,
+          shown: firstAsked?.found ? { ref: firstAsked.ref, ask: got[`${firstAsked.found.ref}|${firstAsked.found.sha}`]! } : null,
+          taken,
+          refused,
+        }),
+      )
+    : null
+  useEffect(() => {
+    if (footerSaid) footer(JSON.parse(footerSaid))
+  }, [footer, footerSaid])
+
   return (
     <OpenAddressContext.Provider value={openAddress}>
     <div ref={shell} className="flex min-w-0 flex-col gap-2 p-2 text-foreground">
@@ -328,11 +350,13 @@ export function App() {
       <div hidden={whole !== null} className={whole ? undefined : 'contents'}>
       {entries.length ? (
         <>
-          <p className="text-[0.7rem] leading-4 text-muted-foreground">
-            {entries.length === 1 ? 'One reference is' : `${entries.length} references are`} selected on the canvas
-            {taken ? `; Kehikot last read this epic at ${taken}` : ''}.
-          </p>
-          {refused ? (
+          {footed ? null : (
+            <p className="text-[0.7rem] leading-4 text-muted-foreground">
+              {entries.length === 1 ? 'One reference is' : `${entries.length} references are`} selected on the canvas
+              {taken ? `; Kehikot last read this epic at ${taken}` : ''}.
+            </p>
+          )}
+          {refused && !footed ? (
             <p className="text-[0.7rem] leading-4 text-muted-foreground" data-testid="refused">
               {refused}
             </p>
