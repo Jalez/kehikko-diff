@@ -80,11 +80,12 @@ export const PREFERRED_PORT = 7890
  * - **`steps:read`.** A step's prose is not a change and has no diff.
  * - **`stage:report`.** Saying where work stands belongs to whoever is doing it.
  *   A program that reads a patch has no standing to assert anything about it.
- * - **`state:keep`.** There is nothing worth remembering across a reload. What
+ * - **`state:keep`.** For the kept view (protocol 2.70.0) and nothing else: where
+ *   the page was scrolled to, so the container opens where it was left. What
  *   this page shows is decided entirely by the canvas's selection, which the
- *   host hands over in the greeting anyway; the only local state is which files
- *   a reader has collapsed, and restoring that against a diff that has since
- *   moved would be worse than starting open.
+ *   host hands over in the greeting anyway, and the files a reader has
+ *   collapsed are not kept: restoring that against a diff that has since moved
+ *   would be worse than starting open.
  * - **No `mcp`.** An agent that wants a diff already has `gh` and `glab`. A door
  *   here would be a second, slower, cache-shaped answer to a question the agent
  *   can ask directly, going stale on its own schedule.
@@ -254,7 +255,7 @@ export const MANIFEST: Manifest = manifestSchema.parse({
     /* `location:set` (1.2.0): a press on a line number points the canvas there
        ("show", so Source follows), and "Comment on this line" asks Review for a
        comment ("comment"). On a press, never on a scroll. */
-    uses: ['live:read', 'trackers:read', 'location:set', 'address:open'],
+    uses: ['live:read', 'trackers:read', 'location:set', 'address:open', 'state:keep'],
     storage: true,
     prompt: false,
   },

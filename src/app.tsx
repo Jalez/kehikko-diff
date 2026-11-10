@@ -109,7 +109,7 @@ export function App() {
     answer(true, '')
   }, [])
 
-  const { sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress, drawsFooter, footer } = useKehikot(ID, onGoto)
+  const { sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress, drawsFooter, footer, ready } = useKehikot(ID, onGoto)
 
   /*
    * Pointing the canvas at a line of a change (protocol 2.13.0): a line number
@@ -302,6 +302,13 @@ export function App() {
   const server = useServerStanding()
   const where = sight.at === 'listening' || sight.at === 'unhosted' ? sight.at : 'hosted'
   const whole: CoverState | null = coverFor({ where, projectPath: null, server }, { host: true })
+
+  /* The host's cover is held until this page is drawn (protocol 2.70.0): once the greeting's question is
+     answered, or a cover says why there is nothing to draw. */
+  const drawn = whole === null ? sight.at !== 'asking' : whole !== 'waiting'
+  useEffect(() => {
+    if (drawn) ready()
+  }, [drawn, ready])
 
   const epic = sight.at === 'read' || sight.at === 'asking' || sight.at === 'unread' || sight.at === 'refused' ? sight.epic : null
   const taken = sight.at === 'read' ? generatedAt(sight.live) : null

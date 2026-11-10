@@ -90,6 +90,8 @@ export interface Kehikot {
   drawsFooter: boolean | null
   /** Declare the footer. Only when `drawsFooter` is true. */
   footer: ReturnType<typeof useHost>['footer']
+  /** Say the page is drawn (protocol 2.70.0): the host's cover, held until then, comes off. */
+  ready: () => void
 }
 
 /**
@@ -301,14 +303,14 @@ export function useKehikot(id: string, onGoto: GotoHandler): Kehikot {
   /* Absent from a host older than the shared tracker reading, and then it never moves — which is
      right: such a host has no detail to wait for. */
   const trackerAt = host.context?.tracker?.at ?? null
-  const { selection, resize, location, locate, footer } = host
+  const { selection, resize, location, locate, footer, ready } = host
   const drawsFooter = host.where === 'hosted' ? host.drawsFooter : null
   const hostOpens = host.openAddress
   const hostAnswers = host.answers
   const openAddress = useMemo(() => openerOf({ answers: hostAnswers, openAddress: hostOpens }), [hostAnswers, hostOpens])
 
   return useMemo(
-    () => ({ sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress, drawsFooter, footer }),
-    [sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress, drawsFooter, footer],
+    () => ({ sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress, drawsFooter, footer, ready }),
+    [sight, selection, heads, elsewhere, trackerAt, askHeads, resize, location, locate, openAddress, drawsFooter, footer, ready],
   )
 }

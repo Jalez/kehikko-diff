@@ -1,0 +1,17 @@
+[
+  {
+    "name": "two changes selected",
+    "header": [],
+    "footer": [
+      {
+        "kind": "text",
+        "id": "selected",
+        "text": "2 selected",
+        "level": "normal",
+        "align": "start",
+        "optional": false,
+        "tooltip": "2 references are selected on the canvas; Kehikot last read this epic at 2026-11-10T10:00:00Z."
+      }
+    ]
+  }
+]
