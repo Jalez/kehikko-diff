@@ -336,7 +336,7 @@ export function App() {
 
   return (
     <OpenAddressContext.Provider value={openAddress}>
-    <div ref={shell} className="flex min-w-0 flex-col gap-2 p-2 text-foreground">
+    <div data-kehikot-page ref={shell} className="flex min-w-0 flex-col gap-2 p-2 text-foreground">
       {framed ? null : (
         <header>
           <h1 className="text-sm font-semibold">Diff</h1>
