@@ -113,8 +113,8 @@ export function App() {
 
   /*
    * Pointing the canvas at a line of a change (protocol 2.13.0): a line number
-   * says "show" — Source opens the file there — and "Comment on this line" asks
-   * Review for a comment. What the host says when it does not take one is said
+   * says "show" — a module that shows files opens it there — and "Comment on this
+   * line" asks for a comment, which a module that drafts reviews takes. What the host says when it does not take one is said
    * here, once, until the next press.
    */
   const [refused, setRefused] = useState<string | null>(null)

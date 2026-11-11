@@ -13,7 +13,7 @@ bun test && bun run typecheck
 
 ## What it is
 
-One container. Something else on the canvas — References, Journeys, anything — picks
+One container. Something else on the canvas — a list of references, a journey, anything — picks
 a reference; this shows its patch. Per file, collapsible, added and removed
 lines coloured and marked, line numbers in a gutter on both sides.
 
@@ -44,8 +44,8 @@ All three come out of one `live.get`:
 | which repository | the `url` on the entry | a ref is not an address |
 | which commit | the `sha` on the entry | it is the cache key, and it is the one honest caveat this container has |
 
-`src/live/lookup.ts` is that reading, and it is the same reading References and
-Checklist do, in the same order, for the same reason.
+`src/live/lookup.ts` is that reading, and it is the same reading other modules that
+look up a reference do, in the same order, for the same reason.
 
 **A selected reference that is an ISSUE has no diff.** That is an ordinary state
 with its own sentence — "gh#131 is an issue rather than a change, so there is no
@@ -120,14 +120,14 @@ only content is budgeted (`src/diff/budget.ts`):
 Because `/api/diff` spends this machine's credentials.
 
 A host frames a module without `allow-same-origin` unless its manifest declares
-storage. That costs nothing to a module that holds nothing — References and
-Atlas are right to declare `false` — but an opaque page's fetches to its own
+storage. That costs nothing to a module that holds nothing — such a module
+is right to declare `false` — but an opaque page's fetches to its own
 server are cross-origin, so the server would have to answer with a permissive
 `Access-Control-Allow-Origin` or the page could not read its own `/api/diff`.
 
 And with that header, any page in any tab could call it and read the answer:
 every private repository this login can reach, exfiltrated through the person's
-own browser with no prompt. Journeys had the same shape and it was demonstrated
+own browser with no prompt. Another module had the same shape and it was demonstrated
 rather than theorised, with a one-line `curl` carrying
 `Origin: https://evil.example`.
 
@@ -202,7 +202,7 @@ offset on every row.
   effects run; without this the greeting arrives at a page that is not listening
   yet and nothing ever retries.
 - `use-kehikot.ts` stores the connection **before** acting on the greeting,
-  because the mailbox replays synchronously inside `connect()` — in References
+  because the mailbox replays synchronously inside `connect()` — in another module
   that order left a page reading "Asking about…" for ever, with no question sent
   and no timeout.
 - and it refetches on the epic CHANGING rather than on a context arriving. A

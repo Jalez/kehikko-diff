@@ -3,7 +3,7 @@ import { createContext, useContext, type ReactNode } from 'react'
 import { handLink, handsLink, type OpenAddress } from '@/lib/links'
 
 /**
- * How a link out of Review is opened: handed to the canvas (`address.open`) when
+ * How a link out of this page is opened: handed to the canvas (`address.open`) when
  * the host answers it, else `null` and a new tab. Provided once, by the screen.
  */
 export const OpenAddressContext = createContext<OpenAddress | null>(null)
