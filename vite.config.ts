@@ -35,7 +35,7 @@ import { ID, PREFERRED_PORT } from './manifest.ts'
  *
  * ## `server.cors: false`, and this module is the reason the rule has an exception
  *
- * References and Atlas set `cors: true` and have to. A host frames a module
+ * A module that holds nothing sets `cors: true` and has to. A host frames a module
  * WITHOUT `allow-same-origin` unless its manifest declares storage, which puts
  * the page on an opaque origin — and `<script type="module">` is ALWAYS fetched
  * in CORS mode, so with no permissive header not one script in the page runs.

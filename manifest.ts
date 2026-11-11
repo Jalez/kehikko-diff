@@ -72,7 +72,7 @@ export const PREFERRED_PORT = 7890
  *   Declaring it would be asking for permission to change what every other container
  *   on the canvas is looking at, from a module whose entire job is to answer a
  *   question about what is already picked.
- * - **`epics:read`.** References declares it so that a page with no epic can
+ * - **`epics:read`.** A module may declare it so that a page with no epic can
  *   offer a picker. There is nothing for a picker to do here: even with an epic
  *   named, this page has nothing to draw until something is SELECTED, and no
  *   list of epics gets a reader closer to that. A capability asked for and never
@@ -120,11 +120,11 @@ export const PREFERRED_PORT = 7890
  * false and says why, because a capability declared "just in case" is
  * indistinguishable on screen from one that works.
  *
- * ## `storage: true`, which References would not need and this app does
+ * ## `storage: true`, which a module holding nothing would not need and this app does
  *
  * A host frames a module WITHOUT `allow-same-origin` unless its manifest
  * declares storage. That puts the page on an opaque origin, which costs it
- * nothing if it holds nothing — References and Atlas are right to declare
+ * nothing if it holds nothing — such a module is right to declare
  * `false` — but it has one consequence that decides this manifest: an opaque
  * page's fetches to its OWN server are cross-origin, because its origin is
  * `null` and matches nothing. So the server would have to answer with a
@@ -138,7 +138,7 @@ export const PREFERRED_PORT = 7890
  * call it and READ the answer — which means any website the person visits can
  * pull the source of every private repository their `gh` login can reach, off
  * loopback, with no prompt. Loopback is a fence around the machine and not
- * around the programs on it, and that is not a theoretical hole: Journeys had
+ * around the programs on it, and that is not a theoretical hole: another module had
  * the same shape and it was demonstrated with a one-line `curl` carrying
  * `Origin: https://evil.example`.
  *
@@ -218,7 +218,7 @@ export const MANIFEST: Manifest = manifestSchema.parse({
    * is the whole of what changes this page.
    *
    * The field is new, and the reason to fill it in is a person browsing the
-   * module registry. Until now a host could say who SENDS — References declares
+   * module registry. Until now a host could say who SENDS — a module declares
    * `selection:set` — and could not say who RECEIVES, because every framed
    * module is handed the whole context and receiving one distinguished nobody.
    * So a registry could draw half of every relationship. This is the other
@@ -237,7 +237,7 @@ export const MANIFEST: Manifest = manifestSchema.parse({
    * the reading moving is what says to ask again. See `src/live/heads.ts`.
    *
    * `location` (1.2.0, protocol 2.13.0): somebody pointed at a line of a
-   * change — a comment's reference in Review, a line number here. This page
+   * change — a review comment's reference, a line number here. This page
    * opens that file of that change, draws far enough to reach the line, marks
    * it on the gutter its `side` names and scrolls to it.
    *

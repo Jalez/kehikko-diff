@@ -119,7 +119,7 @@ const number = (raw: string): number | null => {
  *
  * Only `https` and `http`. A `javascript:` or `file:` URL out of somebody's
  * tracker is not an address, and this is the second place in the codebase that
- * has had to say so — `collect.ts` in References says it about `href`.
+ * has had to say so; a module listing references says it about `href`.
  */
 export function locate(url: unknown): Target | null {
   if (typeof url !== 'string' || !url) return null

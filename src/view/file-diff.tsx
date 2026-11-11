@@ -105,7 +105,7 @@ function Line({ line, located = false, onPoint, ref }: { line: DiffLine; located
 
 /**
  * A gutter's number, and — on a change the canvas can point into — a press
- * that points there (`show`), so Source opens the file at that line.
+ * that points there (`show`), so a module that shows files opens it at that line.
  */
 function Gutter({ line, which, onPoint }: { line: DiffLine; which: 'old' | 'new'; onPoint?: Point }) {
   const number = which === 'old' ? line.old : line.new

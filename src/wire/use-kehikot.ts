@@ -131,7 +131,7 @@ export function useKehikot(id: string, onGoto: GotoHandler): Kehikot {
    *
    * A context is no longer a message that only ever means "the reader moved". It
    * carries the canvas's selection, so the host sends one after every selection
-   * change ANYWHERE on the canvas — a click in References, a click in Journeys,
+   * change ANYWHERE on the canvas — a click in a list of references, a click in a journey,
    * a click in a module written next year. Re-asking `live.get` on each of those
    * would throw the reading away and put this page back into `asking` every time
    * somebody selected a row: the diff on screen would vanish, a paragraph would

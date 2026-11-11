@@ -21,7 +21,7 @@ import { trackerReadingResult } from 'kehikot-module-protocol'
  * GitHub numbers issues and pull requests in ONE sequence and spells both
  * `gh#`, so `gh#105` is unreadable on its own and always will be. The way out is
  * the one the protocol points at: ask the host for the epic's reading and read
- * the kind where References reads it — out of the BAG the refresh filed it in. A
+ * the kind where other modules read it — out of the BAG the refresh filed it in. A
  * refresh knew, and filing is how it told us.
  *
  * ## Three things come out of the bag, not one
@@ -136,7 +136,7 @@ export function index(live: unknown): Map<string, Found> {
  * ## Why this exists beside `index`
  *
  * `live.get` is the reading of one EPIC, and the host narrows it to the references
- * that epic names. A reference somebody picked from References' "Show everything" —
+ * that epic names. A reference somebody picked from a list of everything —
  * listed by the project's tracker, named by no step — is in the project's reading and
  * in no epic's. `index` can never find it, and saying "nothing is filed under it"
  * was true of the epic and misleading about the tracker. This reads the row where it

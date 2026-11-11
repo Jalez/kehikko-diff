@@ -345,7 +345,7 @@ describe('the not-ready moments are the shared cover', () => {
 })
 
 describe('a code location (protocol 2.13.0)', () => {
-  const location = { change: '!3105', path: 'src/app.ts', line: 7, side: 'new', intent: 'comment', by: 'kehikot.review', at: AT }
+  const location = { change: '!3105', path: 'src/app.ts', line: 7, side: 'new', intent: 'comment', by: 'kehikot.example', at: AT }
 
   test('the context’s location is the hook’s, and none is null', () => {
     const { result } = renderHook(() => useKehikot('diff', () => {}))
