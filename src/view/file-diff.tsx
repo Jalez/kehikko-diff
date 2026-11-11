@@ -87,7 +87,7 @@ function Line({ line, located = false, onPoint, ref }: { line: DiffLine; located
           than its longest unbroken run, which is the sideways scroll again. */}
       <span className="min-w-0 flex-1 pr-2">{line.text}</span>
       {/* "Comment on this line": shown on hover and on focus, a real button for
-          the keyboard. It asks Review, through the canvas, for a comment here. */}
+          the keyboard. It asks a review module, through the canvas, for a comment here. */}
       {onPoint && placeOf(line, 'comment') ? (
         <button
           type="button"
@@ -308,9 +308,9 @@ export function FileSection({
 
       {spot && needed < 0 && !file.binary ? (
         /* The patch prints only what changed and a little around it. A line it
-           does not print is still in the file: Source shows the whole of it. */
+           does not print is still in the file: a file viewer shows the whole of it. */
         <p className="border-t px-2 py-1 text-[0.7rem] leading-4 text-muted-foreground" data-testid="not-in-patch">
-          {`${spot.from === spot.to ? `Line ${spot.from} is` : `Lines ${spot.from}–${spot.to} are`}${spot.side === 'old' ? ' (before the change)' : ''} not in what the patch prints for this file. Source shows the whole file.`}
+          {`${spot.from === spot.to ? `Line ${spot.from} is` : `Lines ${spot.from}–${spot.to} are`}${spot.side === 'old' ? ' (before the change)' : ''} not in what the patch prints for this file. Open the file in a file viewer to see all of it.`}
         </p>
       ) : null}
 

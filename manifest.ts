@@ -201,7 +201,7 @@ export const MANIFEST: Manifest = manifestSchema.parse({
     'worth reporting. The selection is the scope: review what is selected rather than the whole ' +
     'branch, and if a file in it looks wrong for reasons outside the selection, write that down ' +
     'instead of widening what you touch. The canvas may point at a line of the change (context.location); ' +
-    'set one to show the person a line here and in Source.',
+    'set one to show the person a line here and in a file viewer, if one is on the kehikko.',
   entry: '/',
   /* What its content belongs to (protocol 2.29.0): one mode per scope, the default first. */
   modes: [
@@ -253,7 +253,7 @@ export const MANIFEST: Manifest = manifestSchema.parse({
   declares: {
     protocol: `>=${PROTOCOL} <${PROTOCOL + 1}`,
     /* `location:set` (1.2.0): a press on a line number points the canvas there
-       ("show", so Source follows), and "Comment on this line" asks Review for a
+       ("show", so a file viewer follows), and "Comment on this line" asks a review module for a
        comment ("comment"). On a press, never on a scroll. */
     uses: ['live:read', 'trackers:read', 'location:set', 'address:open', 'state:keep'],
     storage: true,
