@@ -111,7 +111,7 @@ export default defineConfig({
   base: './',
   plugins: [
     serves({ id: ID, prefer: PREFERRED_PORT }),
-    doors({ manifest: MANIFEST, answer, build: BUILD, page: { title: 'Diff' } }),
+    doors({ manifest: MANIFEST, answer, build: BUILD, page: { title: 'Changes' } }),
     react(),
     tailwindcss(),
   ],

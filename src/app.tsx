@@ -61,7 +61,7 @@ import { useKehikot, type GotoHandler, type Sight } from '@/wire/use-kehikot.ts'
  * ## Identity is printed only when nothing is framing this page
  *
  * A host prints the module's name in the container header and hangs the manifest's
- * `summary` off it. A page that also printed "Diff" at the top of itself would
+ * `summary` off it. A page that also printed "Changes" at the top of itself would
  * be saying the name twice and spending a fixed strip of a 340-pixel-tall container
  * on the repetition. Unframed there is no container header and nothing else would
  * ever say what this program is, so the heading stays. The test is
@@ -339,7 +339,7 @@ export function App() {
     <div data-kehikot-page ref={shell} className="flex min-w-0 flex-col gap-2 p-2 text-foreground">
       {framed ? null : (
         <header>
-          <h1 className="text-sm font-semibold">Diff</h1>
+          <h1 className="text-sm font-semibold">Changes</h1>
           <p className="text-[0.7rem] leading-4 text-muted-foreground">
             The diff of whichever change is selected on a canvas, file by file. The patch is read by running{' '}
             <code>gh pr diff</code> or <code>glab mr diff</code> on this machine — this app holds no token of its own —
@@ -351,7 +351,7 @@ export function App() {
       )}
 
       {whole ? (
-        <Cover state={whole} name="Diff" onRetry={retry} detail={whole === 'unhosted' ? NO_LIST : null} />
+        <Cover state={whole} name="Changes" onRetry={retry} detail={whole === 'unhosted' ? NO_LIST : null} />
       ) : null}
 
       <div hidden={whole !== null} className={whole ? undefined : 'contents'}>
