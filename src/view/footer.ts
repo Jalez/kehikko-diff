@@ -4,10 +4,10 @@ import { totals } from '@/diff/parse.ts'
 import type { Ask } from '@/view/change.tsx'
 
 /**
- * Diff's footer, in a host that draws one (`kehikot.footer`, protocol 2.38.0): what is selected
+ * Diff Viewer's footer, in a host that draws one (`kehikot.footer`, protocol 2.38.0): what is selected
  * and how big its diff is, so a container folded to its header and footer still says it. It is
  * the line the page drew above the changes ("One reference is selected; Kehikot last read this
- * epic at …") and the host's answer to a pointed line, in one row the host draws. Diff has no
+ * epic at …") and the host's answer to a pointed line, in one row the host draws. Diff Viewer has no
  * header: what it shows is the canvas's selection, never a choice made here. Nothing in the
  * footer is pressable.
  *

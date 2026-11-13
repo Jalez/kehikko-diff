@@ -179,7 +179,7 @@ export const MANIFEST: Manifest = manifestSchema.parse({
    */
   protocol: PROTOCOL,
   id: ID,
-  name: 'Diff',
+  name: 'Diff Viewer',
   /* The icon a host draws beside the name: a key of the protocol's module icons, never a path
      or URL; the same key Kehikot's official list gives it. */
   icon: 'lucide:git-compare',
@@ -205,7 +205,7 @@ export const MANIFEST: Manifest = manifestSchema.parse({
   entry: '/',
   /* What its content belongs to (protocol 2.29.0): one mode per scope, the default first. */
   modes: [
-    { id: 'diff', label: 'Diff', scope: 'part', scopeSays: 'the diff of each change picked out, one at a time' },
+    { id: 'diff', label: 'Diff Viewer', scope: 'part', scopeSays: 'the diff of each change picked out, one at a time' },
   ],
   extensions: { emits: [], consumes: [] },
   /**

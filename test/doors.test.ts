@@ -79,11 +79,11 @@ describe('manifest', () => {
    * the page it serves carries the build and NO ticket, and anything but a GET is refused.
    */
   test('through the doors: the page at / carries the build and no ticket, and only a host may frame it', async () => {
-    const DOORS = { manifest: MANIFEST, answer, build: BUILD, page: { title: 'Diff' } }
+    const DOORS = { manifest: MANIFEST, answer, build: BUILD, page: { title: 'Diff Viewer' } }
     for (const path of ['/', '/app']) {
       const page = await through(DOORS, 'GET', path)
       expect(page.status).toBe(200)
-      expect(page.text).toContain('<title>Diff</title>')
+      expect(page.text).toContain('<title>Diff Viewer</title>')
       expect(page.text).toContain('<script id="build" type="application/json">')
       expect(page.text).not.toContain('id="ticket"')
       expect(page.headers['cache-control']).toBe('no-store')

@@ -245,7 +245,7 @@ describe('the not-ready moments are the shared cover', () => {
     expect(cover()?.textContent).toBe('Waiting for Kehikot…')
     await settle(800)
     expect(cover()?.getAttribute('data-cover')).toBe('unhosted')
-    expect(cover()?.textContent).toContain('Nothing is framing this page — open Diff in Kehikot.')
+    expect(cover()?.textContent).toContain('Nothing is framing this page — open Diff Viewer in Kehikot.')
     expect(cover()?.textContent).toContain(NO_LIST)
   })
 
@@ -321,7 +321,7 @@ describe('the not-ready moments are the shared cover', () => {
     await settle(20)
     expect(fetched).toHaveLength(1)
     expect(cover()?.getAttribute('data-cover')).toBe('down')
-    expect(cover()?.textContent).toContain('Diff’s own server is not answering.')
+    expect(cover()?.textContent).toContain('Diff Viewer’s own server is not answering.')
     /* Hidden, not gone. */
     const change = container.querySelector('[data-ref="!3105"]')
     expect(change?.closest('[hidden]')).not.toBeNull()
