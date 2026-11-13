@@ -1,4 +1,4 @@
-# Changes
+# Diff Viewer
 
 The diff of whichever change is selected on the canvas, file by file.
 
