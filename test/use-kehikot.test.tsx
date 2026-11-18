@@ -296,7 +296,7 @@ describe('the not-ready moments are the shared cover', () => {
       return reply()
     }) as unknown as typeof fetch
     expect(await askDiff('https://github.com/o/r/pull/1', 'abc')).toEqual({ ok: false, error: 'gh: To get started with GitHub CLI, please run: gh auth login', kind: 'refused' })
-    expect(calls[0]?.url).toBe('api/diff?url=https%3A%2F%2Fgithub.com%2Fo%2Fr%2Fpull%2F1&sha=abc')
+    expect(calls[0]?.url).toBe('/api/diff?url=https%3A%2F%2Fgithub.com%2Fo%2Fr%2Fpull%2F1&sha=abc')
     expect(calls[0]?.init?.method).toBe('GET')
     expect((calls[0]?.init?.headers as Record<string, string>)['x-module-ticket']).toBeUndefined()
     reply = () => new Response(JSON.stringify({ ok: false, error: 'ask for a diff by the url the tracker wrote for it.' }), { status: 400 })
@@ -311,7 +311,7 @@ describe('the not-ready moments are the shared cover', () => {
     globalThis.fetch = (async (url: string) => {
       fetched.push(String(url))
       if (down) throw new TypeError('Load failed')
-      return new Response(JSON.stringify(String(url).startsWith('healthz') ? { ok: true } : { ok: true, text: PATCH, sha: 'f40de680', truncated: false, from: 'cli' }), { status: 200 })
+      return new Response(JSON.stringify(String(url).startsWith('/healthz') ? { ok: true } : { ok: true, text: PATCH, sha: 'f40de680', truncated: false, from: 'cli' }), { status: 200 })
     }) as unknown as typeof fetch
 
     const { container } = render(<App />)
@@ -338,7 +338,7 @@ describe('the not-ready moments are the shared cover', () => {
       await new Promise((resolve) => setTimeout(resolve, 30))
     })
     expect(cover()).toBeNull()
-    expect(fetched.at(-1)).toContain('api/diff?')
+    expect(fetched.at(-1)).toContain('/api/diff?')
     expect(container.querySelector('[data-ref="!3105"]')).toBe(change)
     expect(container.textContent).toContain('one.txt')
   })

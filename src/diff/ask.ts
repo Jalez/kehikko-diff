@@ -5,14 +5,15 @@ import { parseDiff, type FileDiff } from './parse.ts'
 /**
  * Asking this app's own server for one patch.
  *
- * ## A relative path, and that is load-bearing
+ * ## The module's own origin, never a host's
  *
- * `/api/diff` is fetched relative to whatever address this document was served
- * from. Inside a host's frame that is `http://127.0.0.1:7890`, and the request
- * is same-origin because this module declares storage and therefore keeps its
- * real origin. Written absolute it would work on this machine and nowhere else;
- * written against a second port it would be cross-origin and would need the
+ * `/api/diff` is fetched from the origin this document was served from. Inside a
+ * host's frame that is `http://127.0.0.1:7890`, and the request is same-origin
+ * because this module declares storage and therefore keeps its real origin.
+ * Written against a second port it would be cross-origin and would need the
  * permissive CORS header that `manifest.ts` spends four paragraphs refusing.
+ * The protocol's `ask` resolves a module-relative address against that origin's
+ * root, so the address does not depend on the path the page is framed at.
  *
  * It goes through the protocol's `ask`, which never throws, asks with
  * `cache: 'no-store'` (the server's own cache is keyed on the head sha and is
